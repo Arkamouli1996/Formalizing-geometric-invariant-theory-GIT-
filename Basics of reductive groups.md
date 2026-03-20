@@ -1,4 +1,4 @@
-Short summary of reductive groups. The diagram below is taken from Jarod Alper's book https://sites.math.washington.edu//~jarod/expository.html
+Short summary of reductive groups. The diagram below is taken from Jarod Alper's book [here](https://sites.math.washington.edu//~jarod/expository.html)
 
 
 <img width="937" height="127" alt="Screenshot 2026-03-19 213735" src="https://github.com/user-attachments/assets/82d96480-6f48-49f4-b8b6-333bfea223cd" />
