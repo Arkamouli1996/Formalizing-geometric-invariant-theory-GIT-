@@ -18,4 +18,4 @@ We want to formalize the definition of an "affine good quotient" and prove the f
 
 ## Common Starting Point
 
-The first step is to formalize the definition of a **linearly reductive group**. Once this is done, we should do sanity checks by proving that a finite group is an example when the underlying field has characterestic 0. A natural next step would be to prove that GL_n and SL_n are also examples.
+The first step is to formalize the definition of a **linearly reductive group** ( see [here](https://github.com/Arkamouli1996/Formalizing-geometric-invariant-theory-GIT-/blob/main/Basics%20of%20reductive%20groups.md)). Once this is done, we should do sanity checks by proving that a finite group is an example when the underlying field has characterestic 0. A natural next step would be to prove that GL_n and SL_n are also examples.
