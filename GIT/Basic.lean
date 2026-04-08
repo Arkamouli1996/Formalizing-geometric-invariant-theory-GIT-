@@ -7,7 +7,8 @@ import Mathlib.RepresentationTheory.Invariants
 
 universe u
 
-variable (k : Type u) [Field k] (G : Type u) [Group G] [NeZero (Nat.card G : k)]
+variable (k : Type u) [Field k] (R : Type*) [CommRing R] [Algebra k R]
+    (G : Type u) [Group G] [NeZero (Nat.card G : k)]
 
 /- Ring of S_n invariants is given by symmetric polynomials -/
 #check MvPolynomial.esymmAlgEquiv
@@ -48,9 +49,8 @@ example {α : Type} (ι : α → Rep k G) : Rep k G := ∏ᶜ ι
 --expressing a represesntation is irreductible
 example (M : Rep k G) : Prop := IsIrreducible (Rep.ρ M)
 
+/- TODO: fix this definition (should be homorphism of representations, not of vector spaces)-/
 def ReynoldsOperator (M : Rep k G) := M →ₗ[k] (invariants (Rep.ρ M))
-
-variable (R : Type*) [CommRing R] [Algebra k R]
 
 /- A group `G` is linearly reductive over a field `k` if every finite dimensional representation
    is semisimple
