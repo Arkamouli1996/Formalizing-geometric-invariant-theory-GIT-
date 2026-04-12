@@ -58,3 +58,17 @@ example (M : Rep k G) : Prop := IsIrreducible (Rep.ρ M)
     ·Prove that a group with a Reynold's operator is linearly reductive
     ·Prove that GL_n, SL_n, etc are linearly reductive
 -/
+
+-- 1. Reductive => ∃ Reynold's operator
+--      - learn about natural transformations
+-- 1.5 Reynolds operator on k-alg R-> R^G shatring from reynolds oeprator
+--     on vector spaces assuming locally finite
+--      - express local finiteness
+--      - define the projection locally, show well-definied
+-- 2. If R is a graded k-algebra, R_+ is a finite generated ideal,
+--    then R finitely generated as a k-algebra
+--      - facts about graded algebras
+--      - is R_+ in Mathlib as ideal? as graded?
+-- 3. Group acting on a graded k-algebra
+--      - looks for group acting on a graded k-algebra
+--      - R^G is a graded k-algebra?
