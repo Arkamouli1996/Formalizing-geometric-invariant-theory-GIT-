@@ -135,3 +135,16 @@ g(R_d) ⊆ R_d
 So this part likely still needs to be defined by us. 
 The graded algebra file gives the grading framework, 
 but not an off-the-shelf interface for degree-preserving group actions.
+-------------------------------------------------------------------------------------------
+1. Start with a graded k-algebra R = ⨁ d, R_d.
+2. Assume G acts on R by k-algebra automorphisms.
+3. Define the invariant subalgebra R^G.
+4. Assume the action preserves grading: g(R_d) ⊆ R_d.
+5. Show each homogeneous component of an invariant element is still invariant.
+6. Define the degree-d piece of R^G by
+      (R^G)_d := R_d ∩ R^G.
+7. Conclude that
+      R^G = ⨁ d, (R^G)_d,
+   so R^G is a graded k-subalgebra of R.
+------------------------------------------------------------------------------------------
+
