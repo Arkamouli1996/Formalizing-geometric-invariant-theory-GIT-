@@ -159,68 +159,72 @@ section MinimalChecks
 
 -- Step 0: Basic objects
 
--- k = base field
 variable (k : Type u) [Field k]
-
--- G = group
 variable (G : Type v) [Group G]
-
--- ι = grading index
--- we need [AddMonoid ι] because degrees add
 variable (ι : Type w) [DecidableEq ι] [AddMonoid ι]
-
--- R = ambient k-algebra
 variable (R : Type*) [Semiring R] [Algebra k R]
-
--- 𝒜 d = degree-d piece
 variable (𝒜 : ι → Submodule k R)
 
--- Step 1: check whether Mathlib already has the notion
--- “R is graded by the family 𝒜”
+-- Step 1: Check the graded algebra infrastructure
 
 #check GradedAlgebra
-
--- Step 1.1: check whether Mathlib has the projection
--- onto the degree-d piece
-
 #check GradedAlgebra.proj
-
--- Step 1.2: check whether Mathlib has the decomposition
--- R ≃ direct sum of graded pieces
-
 #check DirectSum.decomposeAlgEquiv
 
--- Step 2: check whether Mathlib has group actions
--- on rings / semirings
+-- Step 2: Check group actions on rings / semirings
 
 #check MulSemiringAction
-
--- Step 2.1: check whether each group element induces
--- a ring automorphism
-
 #check MulSemiringAction.toRingEquiv
 
--- Step 3: check whether Mathlib has a notion of
--- invariant subring under a group action
+-- Step 3: Check invariant subring infrastructure
 
 #check IsInvariantSubring
 
--- Step 4: now assume R is already graded by 𝒜
+-- Step 4: Assume R is already graded
+
 variable [GradedAlgebra 𝒜]
 
--- Step 5: encode the action as k-algebra automorphisms
--- ρ g is the automorphism corresponding to g ∈ G
+-- Step 5: Encode the action by algebra automorphisms
+
 variable (ρ : G →* R ≃ₐ[k] R)
 
--- Step 6: define the missing condition:
--- the action preserves each graded piece
+-- Step 6: Define the missing condition: the action preserves the grading
 
 def PreservesGrading : Prop :=
   ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → (ρ g : R → R) r ∈ 𝒜 d
 
--- Step 6.1: check that Lean recognizes the custom definition
 #check PreservesGrading
 
+-- Step 7: Define the invariant subalgebra R^G
+
+def FixedSubalgebra : Subalgebra k R := by
+  sorry
+
+-- Step 8: Define the degree-d piece of the invariant subalgebra
+
+def FixedPiece (d : ι) : Submodule k R :=
+  𝒜 d ⊓ (FixedSubalgebra (k := k) (G := G) (R := R) (ρ := ρ)).toSubmodule
+
+-- Step 9: Main theorem skeleton:
+-- R^G = ⨁ d, (R_d ∩ R^G)
+
+theorem fixedSubalgebra_decomposes
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)) :
+    True := by
+  /-
+  Intended mathematical content:
+
+    The degree-d part of the invariant subalgebra is
+      (R^G)_d := R_d ∩ R^G
+
+    and we have
+      R^G = ⨁ d, (R_d ∩ R^G).
+
+    Hence R^G is a graded k-subalgebra of R.
+  -/
+  sorry
+
 end MinimalChecks
+
 
 
