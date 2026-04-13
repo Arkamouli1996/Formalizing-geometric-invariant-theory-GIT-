@@ -8,21 +8,21 @@ In `GIT/Basic.lean`, we formalize the construction of the **Reynolds operator** 
 
 ## What We Define
 
-### 1. Locally Finite Actions (`Representation.IsLocallyFinite`)
+### 1. Locally Finite Actions (`Representation.IsLocallyFinite`, line 79)
 
 **Definition.** A `DistribMulAction` of a monoid `G` on a `k`-module `R` is *locally finite* if every element `r : R` is contained in a finite-dimensional, `G`-stable `k`-submodule `V ≤ R`.
 
 This is a new definition (not in Mathlib). It is stated at maximal generality: `CommSemiring k`, `Monoid G`, `AddCommMonoid R`.
 
-### 2. Reynolds Operator for Finite Groups (`reynoldsOperator`)
+### 2. Reynolds Operator for Finite Groups (`reynoldsOperator`, line 115)
 
 **Definition.** For a finite group `G` with `|G|` invertible in `k`, the Reynolds operator `R →ₗ[k] R` is defined as the averaging map `r ↦ (1/|G|) ∑_g g • r`, obtained by composing `Representation.averageMap` with `Representation.ofDistribMulAction`.
 
-### 3. Linear Reductivity (`IsLinearlyReductive`)
+### 3. Linear Reductivity (`IsLinearlyReductive`, line 137)
 
 **Definition.** A group `G` is *linearly reductive* over `k` if every finite-dimensional representation of `G` over `k` is completely reducible, i.e., every subrepresentation has a G-stable complement. Formally: every finite-dimensional `ρ : Representation k G V` satisfies `IsSemisimpleRepresentation ρ` (equivalently, `ComplementedLattice (Subrepresentation ρ)`).
 
-### 4. Invariant Subrepresentation (`Representation.invariantSubrepresentation`)
+### 4. Invariant Subrepresentation (`Representation.invariantSubrepresentation`, line 154)
 
 **Definition.** The invariants `ρ.invariants` (vectors fixed by all `g ∈ G`) form a `Subrepresentation` of `ρ`. This wraps the existing Mathlib submodule `ρ.invariants` into the subrepresentation lattice.
 
@@ -30,33 +30,33 @@ This is a new definition (not in Mathlib). It is stated at maximal generality: `
 
 ## What We Prove
 
-### Theorem 1: Finite actions are locally finite (`isLocallyFinite_of_finite`)
+### Theorem 1: Finite actions are locally finite (`isLocallyFinite_of_finite`, line 86)
 
 > If `G` is finite, then any `DistribMulAction` of `G` on a `k`-module `R` is locally finite.
 
 **Proof idea.** For any `r : R`, take `V = span_k(G • r)`. The orbit is finite (since `G` is finite), so `V` is finite-dimensional. It is `G`-stable because `g • (g' • r) = (gg') • r ∈ orbit`.
 
-### Theorem 2: Reynolds operator maps into invariants (`reynoldsOperator_mem_invariants`)
+### Theorem 2: Reynolds operator maps into invariants (`reynoldsOperator_mem_invariants`, line 119)
 
 > For a finite group, the Reynolds operator sends every element into the `G`-invariant submodule.
 
-### Theorem 3: Reynolds operator fixes invariants (`reynoldsOperator_id`)
+### Theorem 3: Reynolds operator fixes invariants (`reynoldsOperator_id`, line 124)
 
 > For a finite group, the Reynolds operator is the identity on `G`-invariant elements.
 
-### Theorem 4: Finite groups are linearly reductive (`IsLinearlyReductive.of_fintype`)
+### Theorem 4: Finite groups are linearly reductive (`IsLinearlyReductive.of_fintype`, line 142)
 
 > If `G` is a finite group with `|G|` invertible in `k`, then `G` is linearly reductive.
 
 **Proof idea.** Follows from Maschke's theorem: the group algebra `k[G]` is semisimple when `|G|` is invertible, which implies every finite-dimensional `k[G]`-module (= representation) is semisimple.
 
-### Theorem 5: Existence of the Reynolds projection (`exists_reynolds_projection`)
+### Theorem 5: Existence of the Reynolds projection (`exists_reynolds_projection`, line 164)
 
 > If `G` is linearly reductive and `ρ` is a finite-dimensional representation, there exists a `k`-linear, `G`-equivariant projection `π : V →ₗ[k] V` onto `ρ.invariants`.
 
 **Proof idea.** By complete reducibility, the invariant subrepresentation has a `G`-stable complement `W`. The projection along `V = V^G ⊕ W` is the identity on `V^G` and zero on `W`. G-equivariance follows because both summands are `G`-stable: if `v = v_inv + v_W`, then `ρ(g)(v_inv) = v_inv` and `ρ(g)(v_W) ∈ W`, so the projection commutes with the group action.
 
-### Theorem 6: Uniqueness of the Reynolds projection — "Lemma A" (`reynolds_unique`)
+### Theorem 6: Uniqueness of the Reynolds projection — "Lemma A" (`reynolds_unique`, line 209)
 
 > Any two `G`-equivariant, `k`-linear projections `π₁, π₂ : V → V` onto `ρ.invariants` are equal.
 
@@ -68,13 +68,13 @@ This is a new definition (not in Mathlib). It is stated at maximal generality: `
 4. **Show T = 0:** For `t ∈ T`, compute `ρ(g)(t) - t`. This difference lies in `L` (because `π₂(ρ(g)(t) - t) = π₂(t) - π₂(t) = 0` by equivariance) and also in `T` (because `T` is `G`-stable). Since `L ∩ T = 0` (they are complements), we get `ρ(g)(t) = t`, i.e., `t` is invariant. But `t ∈ ker π₁` and `t ∈ V^G` implies `t ∈ V^G ∩ ker π₁ = 0`.
 5. **Conclude:** `T = 0` implies `L = ker π₁`, meaning `ker π₁ ⊆ ker π₂`. Both projections are the identity on `V^G` and zero on `ker π₁`, so `π₁ = π₂`.
 
-### Theorem 7: Naturality of the Reynolds projection — "Lemma B" (`reynolds_natural`)
+### Theorem 7: Naturality of the Reynolds projection — "Lemma B" (`reynolds_natural`, line 291)
 
 > If `ι : V₁ →ₗ[k] V₂` intertwines representations `ρ₁` and `ρ₂`, and `π₁, π₂` are the Reynolds projections on `V₁, V₂` respectively, then `π₂ ∘ ι = ι ∘ π₁`.
 
 **Proof idea.** Decompose `v = π₁(v) + (v - π₁(v))`. On `V^G`, `ι ∘ π₁ = π₂ ∘ ι` because both sides equal `ι` there (both projections fix invariants, and `ι` preserves invariants). On `ker π₁`, apply the same complement argument as in Lemma A: form `L = {w ∈ ker π₁ : π₂(ι(w)) = 0}`, get a complement `T`, show `T = 0` by the same invariant-and-complement trick, conclude `L = ker π₁`, so `π₂ ∘ ι$ vanishes on `ker π₁$, matching `ι ∘ π₁`.
 
-### Theorem 8: Reynolds operator for locally finite actions (`exists_reynolds_of_locallyFinite`)
+### Theorem 8: Reynolds operator for locally finite actions (`exists_reynolds_of_locallyFinite`, line 361)
 
 > If `G` is linearly reductive and acts locally finitely on a `k`-module `R`, there exists a `k`-linear, `G`-equivariant projection `R →ₗ[k] R` onto the invariants `R^G`.
 
