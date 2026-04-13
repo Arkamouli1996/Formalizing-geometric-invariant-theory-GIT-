@@ -67,6 +67,8 @@ variable (G : Type*) [Group G]
 -- V is a vector space with a G-action
 variable (V : Type*) [AddCommGroup V] [Module k V]
 variable [MulAction G V]
+variable [DistribMulAction G V]
+variable [SMulCommClass G k V]
 
 /-LINEAR ACTION-/
 -- check g • (c • v) = c • (g • v), (use SemigroupAction)
@@ -76,26 +78,30 @@ variable [MulAction G V]
 #check @DistribMulAction G V
 
 --test (bugs)
-example (g : G) (c : k) (v : V) := by sorry
-    /-[SMulCommClass G k V] [DistribMulAction G V] :
+/-
+example (g : G) (c : k) (v : V)
+    [SMulCommClass G k V] [DistribMulAction G V] :
     g • (c • v) = c • (g • v) := by
-  exact smul_comm g c v-/
+  exact smul_comm g c v
 
 example (g : G) (v₁ v₂ : V)
     [DistribMulAction G V] :
     g • (v₁ + v₂) = g • v₁ + g • v₂ := by
   exact smul_add g v₁ v₂
-
+-/
 
 /-G Representation-/
+-- we are defining a g representation
 structure GRepresentation where
   -- V is a vector space over k
   (V : Type*)
+  -- Addition is associative, commutative, has a 0 and inverse
   [addCommGroup : AddCommGroup V]
+  -- V is a module over k
   [module : Module k V]
-  -- G acts on V
-  [mulAction : DistribMulAction G V]
-  -- the action is linear: g • (c • v) = c • (g • v)
+  -- group G acts on V
+  [mulAction : DistribMulAction G V] -- distribution
+  -- associativity of the action
   [smulComm : SMulCommClass G k V]
 
 #check IsCompl
