@@ -147,4 +147,54 @@ but not an off-the-shelf interface for degree-preserving group actions.
       R^G = ⨁ d, (R^G)_d,
    so R^G is a graded k-subalgebra of R.
 ------------------------------------------------------------------------------------------
+import Mathlib.Algebra.Ring.Action.Group
+import Mathlib.Algebra.Ring.Action.Invariant
+import Mathlib.RingTheory.GradedAlgebra.Basic
+
+open scoped DirectSum
+
+universe u v w
+
+section MinimalChecks
+
+-- Step 0: Basic objects
+
+variable (k : Type u) [Field k]
+variable (G : Type v) [Group G]
+variable (ι : Type w) [DecidableEq ι] [AddMonoid ι]
+variable (R : Type*) [Semiring R] [Algebra k R]
+variable (𝒜 : ι → Submodule k R)
+
+-- Step 1: Check the graded algebra infrastructure
+
+#check GradedAlgebra
+#check GradedAlgebra.proj
+#check DirectSum.decomposeAlgEquiv
+
+-- Step 2: Check group actions on rings / semirings
+
+#check MulSemiringAction
+#check MulSemiringAction.toRingEquiv
+
+-- Step 3: Check invariant subring infrastructure
+
+#check IsInvariantSubring
+
+-- Step 4: Assume R is already graded
+
+variable [GradedAlgebra 𝒜]
+
+-- Step 5: Encode the action by algebra automorphisms
+
+variable (ρ : G →* R ≃ₐ[k] R)
+
+-- Step 6: Define the missing condition: the action preserves the grading
+
+def PreservesGrading : Prop :=
+  ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → (ρ g : R → R) r ∈ 𝒜 d
+
+#check PreservesGrading
+
+end MinimalChecks
+
 
