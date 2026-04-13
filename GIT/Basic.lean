@@ -74,7 +74,7 @@ section LocallyFinite
 variable {k : Type*} [CommSemiring k] {G : Type*} [Monoid G]
     {R : Type*} [AddCommMonoid R] [Module k R] [DistribMulAction G R]
 
-/-- A `DistribMulAction` of `G` on a `k`-module `R` is locally finite if every element
+/-- Def1: A `DistribMulAction` of `G` on a `k`-module `R` is locally finite if every element
 of `R` is contained in a finite-dimensional `G`-stable `k`-submodule. -/
 def Representation.IsLocallyFinite (k : Type*) [CommSemiring k] (G : Type*) [Monoid G]
     (R : Type*) [AddCommMonoid R] [Module k R] [DistribMulAction G R] : Prop :=
@@ -109,7 +109,7 @@ variable (k : Type*) [CommSemiring k] (G : Type*) [Group G] [Fintype G]
     [Invertible (Fintype.card G : k)]
     (R : Type*) [AddCommMonoid R] [Module k R] [DistribMulAction G R] [SMulCommClass G k R]
 
-/-- The Reynolds operator for a finite group `G` acting on a `k`-module `R`.
+/-- Def2: The Reynolds operator for a finite group `G` acting on a `k`-module `R`.
 This is the `k`-linear projection `R →ₗ[k] R` onto the submodule of `G`-invariants,
 defined as `(1/|G|) ∑ g, ρ(g)`. -/
 noncomputable def reynoldsOperator : R →ₗ[k] R :=
@@ -132,7 +132,7 @@ section GeneralReynolds
 
 universe uV
 
-/-- A group `G` is linearly reductive over `k` if every finite-dimensional representation
+/-- Def3: A group `G` is linearly reductive over `k` if every finite-dimensional representation
 is completely reducible (every subrepresentation has a complement). -/
 class IsLinearlyReductive (k : Type*) [Field k] (G : Type*) [Group G] : Prop where
   isSemisimple : ∀ (V : Type uV) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
@@ -150,7 +150,7 @@ instance IsLinearlyReductive.of_fintype (k : Type*) [Field k] (G : Type*) [Group
 
 variable (k : Type*) [Field k] (G : Type*) [Group G]
 
-/-- The invariants of a representation form a subrepresentation. -/
+/-- Def4: The invariants of a representation form a subrepresentation. -/
 noncomputable def Representation.invariantSubrepresentation
     {V : Type*} [AddCommGroup V] [Module k V] (ρ : Representation k G V) :
     Subrepresentation ρ where
