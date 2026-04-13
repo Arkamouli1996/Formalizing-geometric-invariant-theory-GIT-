@@ -159,40 +159,66 @@ section MinimalChecks
 
 -- Step 0: Basic objects
 
+-- k = base field
 variable (k : Type u) [Field k]
+
+-- G = group
 variable (G : Type v) [Group G]
+
+-- ι = grading index
+-- we need [AddMonoid ι] because degrees add
 variable (ι : Type w) [DecidableEq ι] [AddMonoid ι]
+
+-- R = ambient k-algebra
 variable (R : Type*) [Semiring R] [Algebra k R]
+
+-- 𝒜 d = degree-d piece
 variable (𝒜 : ι → Submodule k R)
 
--- Step 1: Check the graded algebra infrastructure
+-- Step 1: check whether Mathlib already has the notion
+-- “R is graded by the family 𝒜”
 
 #check GradedAlgebra
+
+-- Step 1.1: check whether Mathlib has the projection
+-- onto the degree-d piece
+
 #check GradedAlgebra.proj
+
+-- Step 1.2: check whether Mathlib has the decomposition
+-- R ≃ direct sum of graded pieces
+
 #check DirectSum.decomposeAlgEquiv
 
--- Step 2: Check group actions on rings / semirings
+-- Step 2: check whether Mathlib has group actions
+-- on rings / semirings
 
 #check MulSemiringAction
+
+-- Step 2.1: check whether each group element induces
+-- a ring automorphism
+
 #check MulSemiringAction.toRingEquiv
 
--- Step 3: Check invariant subring infrastructure
+-- Step 3: check whether Mathlib has a notion of
+-- invariant subring under a group action
 
 #check IsInvariantSubring
 
--- Step 4: Assume R is already graded
-
+-- Step 4: now assume R is already graded by 𝒜
 variable [GradedAlgebra 𝒜]
 
--- Step 5: Encode the action by algebra automorphisms
-
+-- Step 5: encode the action as k-algebra automorphisms
+-- ρ g is the automorphism corresponding to g ∈ G
 variable (ρ : G →* R ≃ₐ[k] R)
 
--- Step 6: Define the missing condition: the action preserves the grading
+-- Step 6: define the missing condition:
+-- the action preserves each graded piece
 
 def PreservesGrading : Prop :=
   ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → (ρ g : R → R) r ∈ 𝒜 d
 
+-- Step 6.1: check that Lean recognizes the custom definition
 #check PreservesGrading
 
 end MinimalChecks
