@@ -69,73 +69,78 @@ All work in `GIT/Basic.lean`, after line 67.
 ### Completed (steps 1–7)
 
 Steps 1–6 are fully proved (no `sorry`). Step 7 introduced:
-- `IsLinearlyReductive` class (existence of G-equivariant projection for f.d. reps)
+- `IsLinearlyReductive` class: refactored to use `IsSemisimpleRepresentation` (complete reducibility)
 - `IsLinearlyReductive.of_fintype` instance (finite groups, no `sorry`)
+- `Representation.invariantSubrepresentation`: invariants as a `Subrepresentation`
+- `IsLinearlyReductive.exists_reynolds_projection`: existence of G-equivariant projection (no `sorry`)
+- `IsLinearlyReductive.reynolds_unique`: uniqueness of the projection (no `sorry`)
 - `exists_reynolds_of_locallyFinite` (statement only, `sorry`)
 
 ---
 
-## Removing the `sorry` in `exists_reynolds_of_locallyFinite`
+## Completed: Refactoring and Lemma A
 
-### Why it's hard
+### Refactored `IsLinearlyReductive`
 
-The construction requires choosing, for each `r : R`, a f.d. G-stable submodule `V` containing `r` (from `IsLocallyFinite`), applying the Reynolds projection on `V`, and mapping back to `R`. The result must be independent of the choice of `V`.
-
-Well-definedness requires **naturality** of the Reynolds projection: if `ι : V₁ →ₗ[k] V₂` is G-equivariant, then `ι ∘ π₁ = π₂ ∘ ι`. Naturality in turn requires **uniqueness** of the projection on each f.d. representation. Uniqueness requires knowing that `Hom_G(W, T) = 0` when `W^G = 0` and `T` is trivial, which follows from **complete reducibility**.
-
-### Prerequisite: Refactor `IsLinearlyReductive`
-
-The current definition (existence of a projection) is too weak to derive uniqueness directly. Refactor to the equivalent formulation using **complete reducibility**:
-
-> Every G-stable submodule of a f.d. representation has a G-stable complement.
+Used `IsSemisimpleRepresentation ρ` (= `ComplementedLattice (Subrepresentation ρ)`) instead of raw existence of a projection. This directly gives G-stable complements for any subrepresentation.
 
 ```
-class IsLinearlyReductive : Prop where
-  hasComplement : ∀ (V : Type*) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
-    (ρ : Representation k G V) (W : Submodule k V),
-    (∀ (g : G) (w : V), w ∈ W → ρ g w ∈ W) →
-    ∃ U : Submodule k V, (∀ (g : G) (u : V), u ∈ U → ρ g u ∈ U) ∧ IsCompl W U
+class IsLinearlyReductive (k : Type*) [Field k] (G : Type*) [Group G] : Prop where
+  isSemisimple : ∀ (V : Type*) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
+    (ρ : Representation k G V), IsSemisimpleRepresentation ρ
 ```
 
-Then derive the old formulation (existence of projection onto `V^G`) as a theorem: take `W = invariants ρ`, get complement `U`, and the projection along `U` onto `W` is the Reynolds operator.
+`of_fintype` proved via `isSemisimpleRepresentation_iff_isSemisimpleModule_asModule` and the Maschke instance `IsSemisimpleModule k[G] V`.
 
-Also re-prove `IsLinearlyReductive.of_fintype` from Maschke's theorem (`LinearMap.equivariantProjection`).
+### `exists_reynolds_projection` (existence)
 
-### Lemma A: Uniqueness of the Reynolds projection
+From `IsSemisimpleRepresentation ρ`, get a complement `W` of `ρ.invariantSubrepresentation`. Convert `IsCompl` on `Subrepresentation` to `IsCompl` on `Submodule` (via `toSubmodule_inf`/`toSubmodule_sup`). Build projection using `Submodule.linearProjOfIsCompl`. G-equivariance: decompose `v = vi + vw`, use that `ρ g vi = vi` (invariant) and `ρ g vw ∈ W` (G-stable), so the projection is identity on `vi` and zero on both `vw` and `ρ g vw`.
 
-**Statement.** For a f.d. representation `V` of a linearly reductive group, the G-equivariant k-linear projection `V → V^G` is unique.
+### `reynolds_unique` (uniqueness, Lemma A)
 
-**Proof sketch.** Let `π₁, π₂` be two such projections. Set `φ = π₁ - π₂ : V → V^G`. Then `φ` is G-equivariant and `φ|_{V^G} = 0`. By complete reducibility, `V = V^G ⊕ W` with `W` G-stable and `W^G = 0`. It suffices to show `φ|_W = 0`.
+**Proved theorem.** Any two G-equivariant k-linear projections `π₁, π₂` onto `ρ.invariants` are equal.
 
-The restriction `φ|_W : W → V^G` is G-equivariant. Since `V^G` has trivial action, `φ(gw) = g · φ(w) = φ(w)` for all `g`, so `φ` factors through the coinvariants. Apply complete reducibility to `W`: the submodule `K = ker(φ|_W)` is G-stable, so `W = K ⊕ K'`. The quotient `W/K ≅ K'` maps isomorphically onto `im(φ|_W) ⊆ V^G`, so `K'` is a trivial sub-representation of `W`. But `K'^G = K' ⊆ W^G = 0`, so `K' = 0` and `φ|_W = 0`.
+**Proof structure:**
+1. Restrict ρ to `ker π₁` via `ρ.subrepresentation`. This is f.d. and semisimple (by `hlr.isSemisimple`).
+2. Define `L = ker π₁ ∩ ker π₂` as a subrepresentation of the restriction (it's the comap of `ker π₂` along the inclusion `ker π₁ ↪ V`).
+3. By semisimplicity of `ker π₁`, `L` has a complement `T` (from `ComplementedLattice`).
+4. **Key step**: for `t ∈ T`, show `ρ g t = t`:
+   - `ρ g t - t ∈ L` because `π₂(ρ g t - t) = π₂ t - π₂ t = 0` (G-equivariance of π₂).
+   - `ρ g t - t ∈ T` because T is G-stable (subrepresentation) and closed under subtraction.
+   - `ρ g t - t ∈ L ∩ T = ⊥` (complement), so `ρ g t = t`.
+5. Then `t ∈ ρ.invariants` and `t ∈ ker π₁`, so `t ∈ ρ.invariants ∩ ker π₁ = ⊥` (from `h₁.isCompl`).
+6. Hence `T = ⊥`, so `L = ⊤`, meaning `ker π₁ ⊆ ker π₂`.
+7. Both projections are identity on `ρ.invariants` and zero on `ker π₁`, so `π₁ = π₂`.
+
+**Mathlib API used:**
+- `Representation.subrepresentation` to restrict ρ to a G-stable submodule
+- `Subrepresentation` lattice operations (`toSubmodule_inf`, `toSubmodule_sup`)
+- `ComplementedLattice.exists_isCompl` for the complement
+- `LinearMap.IsProj.isCompl` connecting projections to complementary submodules
+
+---
+
+## Remaining `sorry`: `exists_reynolds_of_locallyFinite`
+
+### What it needs
+
+With uniqueness (Lemma A) now proved, the remaining steps are:
 
 ### Lemma B: Naturality
 
-**Statement.** If `ι : V₁ →ₗ[k] V₂` is G-equivariant and `π₁, π₂` are the (unique) Reynolds projections, then `π₂ ∘ ι = ι ∘ π₁`.
+**Statement.** If `ι : V₁ →ₗ[k] V₂` is G-equivariant and `π₁, π₂` are the (unique) Reynolds projections on V₁, V₂, then `π₂ ∘ ι = ι ∘ π₁`.
 
-**Proof sketch.** The map `π₂ ∘ ι|_{V₁^G}` is a G-equivariant projection `V₁ → V₂^G` that restricts to `ι` on `V₁^G` (since `ι` maps invariants to invariants, and `π₂` fixes invariants). By uniqueness (Lemma A), the composite `π₂ ∘ ι` agrees with `ι ∘ π₁` on all of `V₁`.
+**Proof.** The map `ι ∘ π₁ : V₁ → V₂` is G-equivariant and projects `V₁` into `V₂^G` (since ι maps invariants to invariants). The map `π₂ ∘ ι : V₁ → V₂` is also G-equivariant and agrees with `ι ∘ π₁` on `V₁^G`. Both are G-equivariant projections `V₁ → V₂^G` that restrict to `ι` on `V₁^G`. By `reynolds_unique` applied appropriately, they agree.
 
 ### Lemma C: Local construction
 
-**Statement.** For each `r : R`, define `reynolds(r)` by choosing (via `IsLocallyFinite`) a f.d. G-stable `V` with `r ∈ V`, restricting the representation to `V`, applying the unique Reynolds projection, and mapping back to `R` via the inclusion `V ↪ R`.
-
-This uses `Classical.choice` for the submodule selection.
+For each `r : R`, use `IsLocallyFinite` to choose (via `Classical.choice`) a f.d. G-stable `V` with `r ∈ V`. Restrict the representation, apply the Reynolds projection, and map back via the inclusion `V ↪ R`.
 
 ### Lemma D: Well-definedness and linearity
 
-**Well-definedness.** If `r ∈ V₁` and `r ∈ V₂`, then `r ∈ V₁ + V₂` (still f.d., G-stable). The inclusions `V₁ ↪ V₁ + V₂` and `V₂ ↪ V₁ + V₂` are G-equivariant. By naturality (Lemma B), the projections computed in `V₁`, `V₂`, and `V₁ + V₂` all agree on `r`.
+**Well-definedness.** If `r ∈ V₁ ∩ V₂`, embed both into `V₁ + V₂` (f.d., G-stable). By naturality (Lemma B), projections in V₁, V₂, and V₁ + V₂ agree on r.
 
-**Linearity.** For `r, s : R`, use `IsLocallyFinite` to get `V_r ∋ r` and `V_s ∋ s`. Then `V_r + V_s` is f.d., G-stable, and contains both `r` and `s`. Linearity of the local projection on `V_r + V_s` gives `reynolds(r + s) = reynolds(r) + reynolds(s)` and `reynolds(c · r) = c · reynolds(r)` (after applying well-definedness to identify all three computations in `V_r + V_s`).
-
-### Suggested order of work
-
-1. Refactor `IsLinearlyReductive` to use complete reducibility
-2. Re-prove `IsLinearlyReductive.of_fintype`
-3. Derive existence of Reynolds projection on f.d. reps (old formulation) as a theorem
-4. Prove Lemma A (uniqueness)
-5. Prove Lemma B (naturality)
-6. Prove Lemma C + D (local construction, well-definedness, linearity)
-7. Remove the `sorry`
+**Linearity.** For `r, s : R`, pick a common f.d. G-stable submodule containing both (using `IsLocallyFinite` for each, then take their sum). Linearity of the local projection gives linearity of the global map.
 
 ### Verification
 
