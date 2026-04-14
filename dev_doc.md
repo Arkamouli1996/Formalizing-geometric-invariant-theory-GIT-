@@ -145,3 +145,123 @@ For each `r : R`, use `IsLocallyFinite` to choose (via `Classical.choice`) a f.d
 ### Verification
 
 `lake build` after each step. No `sorry` in final code.
+
+### 04.13 work:
+1. draw a flow of the dependency of the 8 theorems. Not in img, in code.
+2. stick to the rep k g and other representation inside basic.lean to make the proof more readable.
+
+---
+
+## Why Each Definition Is Needed
+
+### `Representation.IsLocallyFinite` (line 79)
+
+The Reynolds operator is straightforward on finite-dimensional representations, but invariant
+rings like `k[x₁,...,xₙ]` are infinite-dimensional. `IsLocallyFinite` captures the structural
+property that lets us reduce the infinite-dimensional problem to many finite-dimensional ones:
+every element lives in some finite-dimensional G-stable subspace. Without this definition,
+there is no way to state or prove the main theorem (`exists_reynolds_of_locallyFinite`).
+
+### `reynoldsOperator` (line 115)
+
+Packages the finite-group averaging map `r ↦ (1/|G|) ∑_g g·r` as a named `k`-linear map
+`R →ₗ[k] R`. This is the concrete, computable Reynolds operator for the finite case and
+serves as the base case: Theorems 2–3 establish it is indeed a projection onto invariants.
+
+### `IsLinearlyReductive` (line 137)
+
+The hypothesis that makes everything work for infinite groups (GL_n, SL_n, etc.). It says
+every finite-dimensional representation is completely reducible. This is needed because:
+- Theorem 5 uses it to get a G-stable complement of the invariants → Reynolds projection.
+- Theorem 6 (uniqueness) uses it to get complements inside kernels.
+- Theorem 7 (naturality) uses it the same way.
+- Theorem 8 (main result) needs all of the above.
+
+Without this class, there is no way to construct Reynolds projections on individual
+finite-dimensional subspaces, which are the building blocks for the global operator.
+
+### `Representation.invariantSubrepresentation` (line 154)
+
+Adapter between two APIs. `IsLinearlyReductive` gives complete reducibility via
+`IsSemisimpleRepresentation`, which works on the `Subrepresentation` lattice. But invariants
+are naturally a `Submodule`. To ask "the invariants have a G-stable complement" and invoke
+`exists_isCompl` from semisimplicity, we must present the invariants as a `Subrepresentation`.
+Without this wrapper, Theorem 5 (`exists_reynolds_projection`) cannot be stated.
+
+---
+
+## Dependency Flow of the 8 Theorems
+
+Definitions are in `[brackets]`. Arrows show "A is used in the proof of B".
+
+```
+[IsLocallyFinite]          [reynoldsOperator]         [IsLinearlyReductive]     [invariantSubrepresentation]
+     (line 79)                (line 115)                   (line 137)                  (line 154)
+        |                      |      |                      |    |                        |
+        |                      v      v                      |    |                        |
+        |                  Thm 2    Thm 3                    |    |                        |
+        |               (line 119) (line 124)                |    |                        |
+        |                                                    |    |                        |
+        |                      Thm 4                         |    |                        |
+        |                   (line 142)                       |    |                        |
+        |                      |                             |    |                        |
+        |                      | [Maschke]                   |    |                        |
+        |                      v                             |    |                        |
+        |              IsLinearlyReductive.of_fintype -------+ -- |                        |
+        |                                                    |    |                        |
+        |                                                    v    v                        |
+        |                                                  Thm 5 <-------------------------+
+        |                                            (line 164, existence)
+        |                                          uses: IsLinearlyReductive
+        |                                                 invariantSubrepresentation
+        |                                                 IsSemisimpleRepresentation
+        |                                                    |
+        |                                                    v
+        |                                                  Thm 6
+        |                                            (line 209, uniqueness)
+        |                                          uses: IsLinearlyReductive
+        |                                                 Thm 5 (existence)
+        |                                                    |
+        |                                                    v
+        |                                                  Thm 7
+        |                                            (line 291, naturality)
+        |                                          uses: IsLinearlyReductive
+        |                                                 Thm 6 (uniqueness)
+        |                                                    |
+        +----------------------------------------------------+
+                                    |
+                                    v
+                                 Thm 8
+                          (line 361, main result)
+                        uses: IsLocallyFinite (hypothesis)
+                               Thm 5 (local projections)
+                               Thm 7 (naturality → well-definedness)
+```
+
+### Dependency summary (text form):
+
+```
+Thm 1 (isLocallyFinite_of_finite, line 86)
+  <- [IsLocallyFinite]
+
+Thm 2 (reynoldsOperator_mem_invariants, line 119)
+  <- [reynoldsOperator]
+
+Thm 3 (reynoldsOperator_id, line 124)
+  <- [reynoldsOperator]
+
+Thm 4 (of_fintype, line 142)
+  <- [IsLinearlyReductive], Maschke's theorem
+
+Thm 5 (exists_reynolds_projection, line 164)
+  <- [IsLinearlyReductive], [invariantSubrepresentation]
+
+Thm 6 (reynolds_unique, line 209)
+  <- [IsLinearlyReductive], Thm 5
+
+Thm 7 (reynolds_natural, line 291)
+  <- [IsLinearlyReductive], Thm 6
+
+Thm 8 (exists_reynolds_of_locallyFinite, line 361)
+  <- [IsLocallyFinite], Thm 5, Thm 7
+```

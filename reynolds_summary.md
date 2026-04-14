@@ -103,3 +103,52 @@ All definitions and theorems are **fully proved** — no `sorry` anywhere in the
 ## Mathematical Significance
 
 This formalizes a key step in Geometric Invariant Theory: the existence of a Reynolds operator for linearly reductive groups is the foundation for proving that invariant rings `R^G` are finitely generated (Hilbert's finiteness theorem). The locally finite approach handles the infinite-dimensional case (e.g., `G` acting on a polynomial ring) by reducing to the finite-dimensional theory via complete reducibility.
+
+
+## Dependency Flow of the 8 Theorems
+
+Definitions are in `[brackets]`. Arrows show "A is used in the proof of B".
+
+```
+[IsLocallyFinite]          [reynoldsOperator]         [IsLinearlyReductive]     [invariantSubrepresentation]
+     (line 79)                (line 115)                   (line 137)                  (line 154)
+        |                      |      |                      |                             |
+        |                      v      v                      |                             |
+        |                  Thm 2    Thm 3                    |                             |
+        |               (line 119) (line 124)                |                             |
+        |                                                    |                             |
+        |                      Thm 4                         |                             |
+        |                   (line 142)                       |                             |
+        |                      |                             |                             |
+        |                      | [Maschke]                   |                             |
+        |                      v                             |                             |
+        |              IsLinearlyReductive.of_fintype -------|                             |
+        |                                                    |                             |
+        |                                                    v                             |
+        |                                                  Thm 5 <-------------------------+
+        |                                            (line 164, existence)
+        |                                          uses: IsLinearlyReductive
+        |                                                 invariantSubrepresentation
+        |                                                 IsSemisimpleRepresentation
+        |                                                    |
+        |                                                    v
+        |                                                  Thm 6
+        |                                            (line 209, uniqueness)
+        |                                          uses: IsLinearlyReductive
+        |                                                 Thm 5 (existence)
+        |                                                    |
+        |                                                    v
+        |                                                  Thm 7
+        |                                            (line 291, naturality)
+        |                                          uses: IsLinearlyReductive
+        |                                                 Thm 6 (uniqueness)
+        |                                                    |
+        +----------------------------------------------------+
+                                    |
+                                    v
+                                 Thm 8
+                          (line 361, main result)
+                        uses: IsLocallyFinite (hypothesis)
+                               Thm 5 (local projections)
+                               Thm 7 (naturality → well-definedness)
+```

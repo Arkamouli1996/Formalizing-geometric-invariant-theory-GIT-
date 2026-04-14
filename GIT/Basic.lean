@@ -26,6 +26,7 @@ def IsLinearAlgebraic := ∃ (n : Type*), ∃ _ : DecidableEq n, ∃ _ : Fintype
 open Monoid MonoidAlgebra Representation
 
 /- the category of G-representations over k -/
+-- use this one
 #check Rep k G
 
 /- the Group algebra -/
@@ -36,6 +37,7 @@ noncomputable
 example (V W : Rep k G) : Rep k G := (V ⨯ W)
 
 --morphisms in the representation category are coerced to functions
+-- use this representation
 example (V W : Rep k G) (f : V ⟶ W) (v : V) : W := f v
 
 noncomputable
@@ -132,7 +134,8 @@ section GeneralReynolds
 
 universe uV
 
-/-- Def3: A group `G` is linearly reductive over `k` if every finite-dimensional representation
+/-- TODO: Further check the is semi simple definition on the mathlib
+Def3: A group `G` is linearly reductive over `k` if every finite-dimensional representation
 is completely reducible (every subrepresentation has a complement). -/
 class IsLinearlyReductive (k : Type*) [Field k] (G : Type*) [Group G] : Prop where
   isSemisimple : ∀ (V : Type uV) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
@@ -147,6 +150,7 @@ instance IsLinearlyReductive.of_fintype (k : Type*) [Field k] (G : Type*) [Group
       rw [Nat.card_eq_fintype_card]
       exact ⟨Invertible.ne_zero (Fintype.card G : k)⟩
     exact ρ.isSemisimpleRepresentation_iff_isSemisimpleModule_asModule.mpr inferInstance
+-- usage of infer Instance
 
 variable (k : Type*) [Field k] (G : Type*) [Group G]
 
@@ -532,6 +536,6 @@ end GeneralReynolds
 --    then R finitely generated as a k-algebra
 --      - facts about graded algebras
 --      - is R_+ in Mathlib as ideal? as graded?
--- 3. Group acting on a graded k-algebra
---      - looks for group acting on a graded k-algebra
---      - R^G is a graded k-algebra?
+
+-- ->[k] representation
+-- linear map is REP k g in mathlib
