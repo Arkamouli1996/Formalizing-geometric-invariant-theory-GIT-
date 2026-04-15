@@ -1,28 +1,28 @@
 /- Here I am trying to formalize if a group is linearly reductive
-then there exists a Reynolds operator -/
+  then there exists a Reynolds operator -/
 
 /- Definitions we need:
 1. Linear action: An action of a group G on a vector space V
-over a field k is LINEAR if for all c ∈ k, g ∈ G, v,v₁,v₂ ∈ V:
-  (i)  g • (c • v) = c • (g • v)
-  (ii) g • (v₁ + v₂) = g • v₁ + g • v₂
+  over a field k is LINEAR if for all c ∈ k, g ∈ G, v,v₁,v₂ ∈ V:
+    (i)  g • (c • v) = c • (g • v)
+    (ii) g • (v₁ + v₂) = g • v₁ + g • v₂
 
 2. G representation: A vector space V with a linear G-action.
-We write V = W ⊕ W' if:
-  (i)  every v ∈ V can be written as v = w + w' with w ∈ W, w' ∈ W'
-  (ii) W ∩ W' = {0}
+  We write V = W ⊕ W' if:
+    (i)  every v ∈ V can be written as v = w + w' with w ∈ W, w' ∈ W'
+    (ii) W ∩ W' = {0}
 
 3. Invariants: Given a G-representation V, the invariants are:
   V^G = { f ∈ V | g • f = f for all g ∈ G }
 
 4. Linearly Reductive: G is linearly reductive if
-for every finite-dimensional V with a linear G-action, and every
-G-stable subspace W ⊆ V (i.e. g • w ∈ W for all g ∈ G, w ∈ W),
-there exists a G-stable complement W' such that:
-  V = W ⊕ W'   as G-representations
+  for every finite-dimensional V with a linear G-action, and every
+  G-stable subspace W ⊆ V (i.e. g • w ∈ W for all g ∈ G, w ∈ W),
+  there exists a G-stable complement W' such that:
+    V = W ⊕ W'   as G-representations
 
 5. Reynolds operator: A Reynolds operator is a NATURAL TRANSFORMATION  R : Id ⟹ (-)^G.
-(Note assumption: not assuming G is finite, or G is invertible in k)
+  (Note assumption: not assuming G is finite, or the characteristic of k does not divide the order of G)
 
     5.1. Two functors on Rep(G):
             1. Identity functor    Id      : M ↦ M
@@ -54,7 +54,6 @@ there exists a G-stable complement W' such that:
         (x,y) -> (x,0) so whatever is on x is fixed and it's still on the x-axis.
 -/
 
-
 import Mathlib.RepresentationTheory.Basic
 import Mathlib.RepresentationTheory.Invariants
 import Mathlib.LinearAlgebra.Projection
@@ -66,47 +65,35 @@ variable (k : Type*) [Field k]
 variable (G : Type*) [Group G]
 -- V is a vector space with a G-action
 variable (V : Type*) [AddCommGroup V] [Module k V]
-variable [MulAction G V]
-variable [DistribMulAction G V]
-variable [SMulCommClass G k V]
 
 /-LINEAR ACTION-/
--- check g • (c • v) = c • (g • v), (use SemigroupAction)
+-- check g • (c • v) = c • (g • v)
 #check @SMulCommClass G k V
-
--- check g • (v₁ + v₂) = g • v₁ + g • v₂ (use MulAction)
+-- check g • (v₁ + v₂) = g • v₁ + g • v₂
 #check @DistribMulAction G V
 
---test (bugs)
-/-
-example (g : G) (c : k) (v : V)
-    [SMulCommClass G k V] [DistribMulAction G V] :
-    g • (c • v) = c • (g • v) := by
-  exact smul_comm g c v
-
-example (g : G) (v₁ v₂ : V)
-    [DistribMulAction G V] :
-    g • (v₁ + v₂) = g • v₁ + g • v₂ := by
-  exact smul_add g v₁ v₂
--/
-
 /-G Representation-/
--- we are defining a g representation
-structure GRepresentation where
-  -- V is a vector space over k
-  (V : Type*)
-  -- Addition is associative, commutative, has a 0 and inverse
-  [addCommGroup : AddCommGroup V]
-  -- V is a module over k
-  [module : Module k V]
-  -- group G acts on V
-  [mulAction : DistribMulAction G V] -- distribution
-  -- associativity of the action
-  [smulComm : SMulCommClass G k V]
-
-#check IsCompl
-
+-- In mathlib, a representation is a group homomorphism
+-- from G into the endomorphism of V
+variable (ρ : Representation k G V)
 
 /-Invariants-/
-/-Linearly Reductive-/
-/-Reynolds Operator-/
+-- invariants defined as the submodule of vectors fixed by the group action
+/-noncomputable: a marker for definitions that rely on
+  non-constructive principles-/
+noncomputable def invariants : Submodule k V :=
+  ρ.invariants
+
+/-Linearly reductive group-/
+class LinearlyReductive (k G : Type*) [Field k] [Group G] where
+  split_invariants :
+  -- For every vector space V over k
+    ∀ (V : Type*) [AddCommGroup V] [Module k V]
+    -- choose a representation of G on V
+      (ρ : Representation k G V),
+      -- there exists some subspace
+      ∃ W' : Submodule k V,
+      -- such that V is the direct sum of the invariants and W'
+        IsCompl ρ.invariants W'
+
+-- projection v-> (w,w')-> w
