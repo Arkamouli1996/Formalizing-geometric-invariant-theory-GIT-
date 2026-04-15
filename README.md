@@ -10,7 +10,7 @@ There are two main directions of formalization, each building on a common starti
 
 **i) Commutative Algebra**
 
-We want to formalize and prove the following theorem: given a linearly reductive group G acting on a finitely generated k-algebra R, the invariant ring R^G is a finitely generated k-algebra. For a quick exposition, see [here](https://amathew.wordpress.com/2011/09/03/invariant-theory-for-reductive-groups/).
+We want to formalize and prove the following theorem: given a linearly reductive group G acting on a finitely generated k-algebra R by a locally finite action, the invariant ring R^G is a finitely generated k-algebra. For a quick exposition, see [here](https://amathew.wordpress.com/2011/09/03/invariant-theory-for-reductive-groups/).
 
 **ii) Geometry**
 
