@@ -79,6 +79,7 @@ variable (ρ : Representation k G V)
 
 /-Invariants-/
 -- invariants defined as the submodule of vectors fixed by the group action
+
 /-noncomputable: a marker for definitions that rely on
   non-constructive principles-/
 noncomputable def invariants : Submodule k V :=
