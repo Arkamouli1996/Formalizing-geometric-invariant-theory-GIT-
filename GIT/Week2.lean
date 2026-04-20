@@ -359,7 +359,7 @@ Proof outline:
    `ρ (x * coeff x) = ρ (toR (lift x) * coeff x) = lift x * ρ (coeff x)`.
 -/
 theorem reynolds_rewrite
-    (f : A) (coeff : R → R)
+    (f : A) (coeff : s → R)
     (hf : toR f = ∑ x ∈ s, x * coeff x)
     (hlift : ∀ x ∈ s, toR (lift x) = x)
     (hρ_id : ∀ a : A, ρ (toR a) = a)
@@ -398,7 +398,7 @@ Proof outline:
   hence lies in `Ideal.span (lift '' s)`.
 • A finite sum of ideal elements lies in the ideal (`Ideal.sum_mem`). -/
 theorem mem_ideal_span_lift_of_reynolds
-    (f : A) (coeff : R → R)
+    (f : A) (coeff : s → R)
     (hf : toR f = ∑ x ∈ s, x * coeff x)
     (hlift : ∀ x ∈ s, toR (lift x) = x)
     (hρ_id : ∀ a : A, ρ (toR a) = a)
