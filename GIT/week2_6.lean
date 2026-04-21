@@ -4,7 +4,7 @@
 Noetherian ring:  IsNoetherian R M
 
 Noetherian ring has explicit generators t1...tn:
-Submodule.fg_iff_exists_fin_generating_family
+Submodule.fg_iff_exists_fin_generating_family (or use submodule.fg_def)
 
 The existence of finite generators:
 
