@@ -14,6 +14,7 @@ noncomputable def invariants : Submodule k V := ρ.invariants
 STEP 1: Use linear reductivity to obtain a decomposition
         V = V^G ⊕ W'
 -/
+
 /-- Linearly reductive means: every representation splits as V = V^G ⊕ W' -/
 class LinearlyReductive (k G : Type*) [Field k] [Group G] where
   split_invariants :
@@ -71,12 +72,10 @@ theorem reynoldsOperator_id_on_invariants
   classical
   unfold reynoldsOperator
   simp only [LinearMap.comp_apply]
-
   let C := getComplement k G V ρ
   have hproj :
-      ρ.invariants.linearProjOfIsCompl C.1 C.2 ⟨v, hv⟩ = ⟨v, hv⟩ :=
+      ρ.invariants.linearProjOfIsCompl C.1 C.2 v = ⟨v, hv⟩ :=
     Submodule.linearProjOfIsCompl_apply_left C.2 ⟨v, hv⟩
-
   simpa using congrArg ρ.invariants.subtype hproj
 
 /-!
