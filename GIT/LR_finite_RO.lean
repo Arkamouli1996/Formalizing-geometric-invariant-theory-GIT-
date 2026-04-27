@@ -74,7 +74,7 @@ theorem reynoldsOperator_id_on_invariants
 
   let C := getComplement k G V ρ
   have hproj :
-      ρ.invariants.linearProjOfIsCompl C.1 C.2 ⟨v, hv⟩ = ⟨v, hv⟩ :=
+      ρ.invariants.linearProjOfIsCompl C.1 C.2 v = ⟨v, hv⟩ :=
     Submodule.linearProjOfIsCompl_apply_left C.2 ⟨v, hv⟩
 
   simpa using congrArg ρ.invariants.subtype hproj
