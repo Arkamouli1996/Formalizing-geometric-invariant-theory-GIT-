@@ -527,7 +527,7 @@ theorem exists_generators_extendedRGplus_from_RGplus
 
   have hfg_span_submodule :
       (Submodule.span R RGplusSet : Submodule R R).FG := by
-    simpa [Ideal.span, Ideal.FG] using hfg_span_ideal
+    exact hfg_span_ideal
 
   rcases
     (Submodule.fg_span_iff_fg_span_finset_subset
@@ -540,8 +540,7 @@ theorem exists_generators_extendedRGplus_from_RGplus
     exact hs_sub hx
 
   · calc
-      Ideal.span (↑s : Set R) = Ideal.span RGplusSet := by
-        simpa [Ideal.span] using hs_span.symm
+      Ideal.span (↑s : Set R) = Ideal.span RGplusSet := hs_span.symm
       _ = extendedRGplus := hspan
 
 end RGplus_generators_S4
