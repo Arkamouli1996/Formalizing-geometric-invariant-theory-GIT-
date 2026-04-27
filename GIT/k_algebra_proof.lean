@@ -308,11 +308,11 @@ lemma finiteType_degreeZero_of_irrelevant_fg
 
 No assumption on how `𝒜 0` sits over `k`; that is exactly the content of `finiteType_degreeZero_of_irrelevant_fg`.
 -/
--- theorem finiteType_of_finitely_generated_irrelevant_ideal
---     (h : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.FG) :
---     Algebra.FiniteType (𝒜 0) R :=
---   finiteType_degreeZero_of_irrelevant_fg (k := k) (R := R) (𝒜 := 𝒜) (h := by
---     simpa [irrelevantIdeal] using h)
+theorem finiteType_of_finitely_generated_irrelevant_ideal
+    (h : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.FG) :
+    Algebra.FiniteType (𝒜 0) R :=
+  finiteType_degreeZero_of_irrelevant_fg (k := k) (R := R) (𝒜 := 𝒜) (h := by
+    simpa [irrelevantIdeal] using h)
 
 /- Corollary over `k`: combine the theorem above with finite generation of `𝒜 0` over `k`. -/
 theorem finiteType_k_of_finitely_generated_irrelevant_ideal
