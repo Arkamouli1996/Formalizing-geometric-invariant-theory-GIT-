@@ -105,30 +105,23 @@ lemma proj_commutes_of_preservesGrading
   refine DirectSum.decompose_lhom_ext 𝒜 (fun e => ?_)
   ext y
   by_cases h : e = d
-
   · subst d
-
     have hyρ : (ρ g).toLinearMap (y : R) ∈ 𝒜 e := by
       simpa using hpres g e y.property
-
     change
       ↑(((DirectSum.decompose 𝒜) ((ρ g).toLinearMap (y : R))) e)
         =
       (ρ g).toLinearMap
         (↑(((DirectSum.decompose 𝒜) (y : R)) e))
-
     rw [DirectSum.decompose_of_mem_same 𝒜 hyρ]
     rw [DirectSum.decompose_of_mem_same 𝒜 y.property]
-
   · have hyρ : (ρ g).toLinearMap (y : R) ∈ 𝒜 e := by
       simpa using hpres g e y.property
-
     change
       ↑(((DirectSum.decompose 𝒜) ((ρ g).toLinearMap (y : R))) d)
         =
       (ρ g).toLinearMap
         (↑(((DirectSum.decompose 𝒜) (y : R)) d))
-
     rw [DirectSum.decompose_of_mem_ne 𝒜 hyρ h]
     rw [DirectSum.decompose_of_mem_ne 𝒜 y.property h]
     simp
@@ -140,25 +133,20 @@ lemma fixed_component_is_fixed
     ((DirectSum.decompose 𝒜 (x : R)) d : R) ∈
       (FixedSubalgebra (k := k) (G := G) (R := R) ρ).toSubmodule := by
   intro g
-
   have hlin :
       (GradedAlgebra.proj 𝒜 d).comp (ρ g).toLinearMap =
         (ρ g).toLinearMap.comp (GradedAlgebra.proj 𝒜 d) :=
     proj_commutes_of_preservesGrading
       (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
       hpres g d
-
   have hcomm :
       GradedAlgebra.proj 𝒜 d ((ρ g).toLinearMap (x : R)) =
         (ρ g).toLinearMap (GradedAlgebra.proj 𝒜 d (x : R)) := by
     simpa [LinearMap.comp_apply] using
       congrArg (fun F : R →ₗ[k] R => F (x : R)) hlin
-
   have hxfix : (ρ g).toLinearMap (x : R) = (x : R) := by
     simpa using x.property g
-
   rw [hxfix] at hcomm
-
   simpa [GradedAlgebra.proj_apply] using hcomm.symm
 
 lemma fixed_component_mem_fixedPiece
@@ -202,7 +190,6 @@ lemma fixedPieceForget_injective (d : ι) :
       (fixedPieceForget
         (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) := by
   intro x y h
-
   have hR :
       (((x : FixedPieceInFixedSubalgebra
           (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) :
@@ -214,7 +201,6 @@ lemma fixedPieceForget_injective (d : ι) :
     exact congrArg
       (fun z : 𝒜 d => (z : R))
       h
-
   apply Subtype.ext
   apply Subtype.ext
   exact hR
@@ -230,17 +216,14 @@ theorem fixedSubalgebra_decomposes
         FixedPieceInFixedSubalgebra
           (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d := by
   classical
-
   let B : ι → Submodule k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) :=
     fun d =>
       FixedPieceInFixedSubalgebra
         (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d
-
   let forget : (d : ι) → B d →+ 𝒜 d :=
     fun d =>
       fixedPieceForget
         (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d
-
   let coeFixed :
       FixedSubalgebra (k := k) (G := G) (R := R) ρ →+ R :=
   {
@@ -253,7 +236,6 @@ theorem fixedSubalgebra_decomposes
       intro x y
       rfl
   }
-
   have hcomp :
       coeFixed.comp (DirectSum.coeAddMonoidHom B)
         =
@@ -261,14 +243,10 @@ theorem fixedSubalgebra_decomposes
     apply DirectSum.addHom_ext
     intro i y
     simp [B, forget, coeFixed, fixedPieceForget]
-
   change Function.Bijective ⇑(DirectSum.coeAddMonoidHom B)
-
   constructor
-
   · -- injective
     intro a b h
-
     have hR' :
         coeFixed ((DirectSum.coeAddMonoidHom B) a)
           =
@@ -277,7 +255,6 @@ theorem fixedSubalgebra_decomposes
         (fun z : FixedSubalgebra (k := k) (G := G) (R := R) ρ =>
           coeFixed z)
         h
-
     have ha :
         coeFixed ((DirectSum.coeAddMonoidHom B) a)
           =
@@ -285,7 +262,6 @@ theorem fixedSubalgebra_decomposes
       exact congrArg
         (fun F : (DirectSum ι fun d => B d) →+ R => F a)
         hcomp
-
     have hb :
         coeFixed ((DirectSum.coeAddMonoidHom B) b)
           =
@@ -293,7 +269,6 @@ theorem fixedSubalgebra_decomposes
       exact congrArg
         (fun F : (DirectSum ι fun d => B d) →+ R => F b)
         hcomp
-
     have hR :
         (DirectSum.coeAddMonoidHom 𝒜)
             ((DirectSum.map forget) a)
@@ -305,25 +280,20 @@ theorem fixedSubalgebra_decomposes
             = coeFixed ((DirectSum.coeAddMonoidHom B) a) := ha.symm
         _ = coeFixed ((DirectSum.coeAddMonoidHom B) b) := hR'
         _ = (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) b) := hb
-
     have hinjA :
         Function.Injective ⇑(DirectSum.coeAddMonoidHom 𝒜) :=
       (DirectSum.Decomposition.isInternal 𝒜).1
-
     have hmap :
         (DirectSum.map forget) a = (DirectSum.map forget) b :=
       hinjA hR
-
     exact
       ((DirectSum.map_injective forget).2
         (fun d =>
           fixedPieceForget_injective
             (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d))
         hmap
-
   · -- surjective
     intro x
-
     let y : DirectSum ι fun d => B d :=
       (DirectSum.mk
         (fun d => B d)
@@ -340,21 +310,16 @@ theorem fixedSubalgebra_decomposes
               (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
               x d.1
           ⟩ : B d.1))
-
     refine ⟨y, ?_⟩
-
     apply Subtype.ext
-
     change
       coeFixed ((DirectSum.coeAddMonoidHom B) y)
         =
       (x : R)
-
     have hy_decomp :
         (DirectSum.map forget) y = DirectSum.decompose 𝒜 (x : R) := by
       ext d
       by_cases hd : d ∈ (DirectSum.decompose 𝒜 (x : R)).support
-
       · have hy_apply :
             y d =
               (⟨
@@ -370,20 +335,15 @@ theorem fixedSubalgebra_decomposes
               ⟩ : B d) := by
           dsimp [y]
           exact DirectSum.mk_apply_of_mem hd
-
         rw [DirectSum.map_apply, hy_apply]
         simp [forget, fixedPieceForget]
-
       · have hy_apply : y d = 0 := by
           dsimp [y]
           exact DirectSum.mk_apply_of_notMem hd
-
         have hzero : (DirectSum.decompose 𝒜 (x : R)) d = 0 := by
           exact DFinsupp.notMem_support_iff.mp hd
-
         rw [DirectSum.map_apply, hy_apply, hzero]
         simp
-
     have hyR :
         coeFixed ((DirectSum.coeAddMonoidHom B) y)
           =
@@ -391,7 +351,6 @@ theorem fixedSubalgebra_decomposes
       exact congrArg
         (fun F : (DirectSum ι fun d => B d) →+ R => F y)
         hcomp
-
     calc
       coeFixed ((DirectSum.coeAddMonoidHom B) y)
           =
@@ -542,7 +501,7 @@ noncomputable def inst_isScalarTower_degreeZero :
 Strong induction on `d`. Degree `0`: `y ∈ 𝒜 0` embeds in the adjoin. For `d > 0`, `y` lies in
 the irrelevant ideal hence in `Ideal.span T`; pick `y = ∑ l t * t`, apply the degree-`d` graded
 projection (which fixes `y`) and push it through the sum. For each `t`, graded multiplication with
-homogeneous `t` identifies the degree-`d` piece of `l t * t` with `(decompose (l t)) (d - deg t) * t`
+homogeneous `t` identifies the degree-`d` piece of `l t*t` with `(decompose (l t)) (d - deg t) * t`
 when `deg t ≤ d`; that graded piece has degree `< d`, so IH covers it, then multiply by `t` in the
 adjoin. If `deg t > d`, the projection is `0`. Sum and `mul` closure finish.
 -/
@@ -627,7 +586,8 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
         simpa [hπy] using h2
       exact h3.symm
 
-    -- Each summand `πd (l t * t)` lies in the adjoin, hence their sum (and thus `y`) lies in the adjoin.
+    -- Each summand `πd (l t * t)` lies in the adjoin,
+    -- hence their sum (and thus `y`) lies in the adjoin.
     have hsum_mem :
         (Finset.sum l.support (fun t => πd (l t * (t : R)))) ∈
           Algebra.adjoin (𝒜 0) (T : Set R) := by
@@ -680,7 +640,8 @@ lemma finiteType_degreeZero_of_irrelevant_fg
     Algebra.FiniteType (𝒜 0) R := by
   classical
   obtain ⟨T, hspan, hT⟩ := exists_finset_homogeneous_pos_generators (k := k) (R := R) (𝒜 := 𝒜) h
-  -- `Algebra.FiniteType (𝒜 0) R` means `(⊤ : Subalgebra (𝒜 0) R).FG`, i.e. some finset adjoins to `⊤`.
+  -- `Algebra.FiniteType (𝒜 0) R` means `(⊤ : Subalgebra (𝒜 0) R).FG`,
+  -- i.e. some finset adjoins to `⊤`.
   refine ⟨⟨T, ?_⟩⟩
   rw [eq_top_iff]
   intro r _
@@ -695,7 +656,8 @@ lemma finiteType_degreeZero_of_irrelevant_fg
 
 /- Final theorem: finitely generated irrelevant ideal implies `R` is finitely generated over `𝒜 0`.
 
-No assumption on how `𝒜 0` sits over `k`; that is exactly the content of `finiteType_degreeZero_of_irrelevant_fg`.
+No assumption on how `𝒜 0` sits over `k`;
+that is exactly the content of `finiteType_degreeZero_of_irrelevant_fg`.
 -/
 theorem finiteType_of_finitely_generated_irrelevant_ideal
     (h : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.FG) :
@@ -767,24 +729,18 @@ theorem exists_generators_extendedRGplus_from_RGplus
       (∀ x ∈ s, x ∈ RGplusSet) ∧
       Ideal.span (↑s : Set R) = extendedRGplus := by
   classical
-
   have hfg_span_ideal : (Ideal.span RGplusSet).FG := by
     simpa [hspan] using hfg
-
   have hfg_span_submodule :
       (Submodule.span R RGplusSet : Submodule R R).FG := by
     exact hfg_span_ideal
-
   rcases
     (Submodule.fg_span_iff_fg_span_finset_subset
       (R := R) (M := R) RGplusSet).1 hfg_span_submodule
     with ⟨s, hs_sub, hs_span⟩
-
   refine ⟨s, ?_, ?_⟩
-
   · intro x hx
     exact hs_sub hx
-
   · calc
       Ideal.span (↑s : Set R) = Ideal.span RGplusSet := hs_span.symm
       _ = extendedRGplus := hspan
