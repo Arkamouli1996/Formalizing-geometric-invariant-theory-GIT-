@@ -49,6 +49,18 @@ induction hypothesis to the α_i’s.
 If `R₊` is finitely generated as an ideal and `𝒜 0` is finitely generated as a `k`-algebra
 (often `𝒜 0 = k` in GIT), then `R` is finitely generated as a `k`-algebra.
 -/
+
+-- ensure the first assumption
+-- is lean on the same page that R is an n graded algebra, not general definition
+
+/- April 20 Meeting Notes
+
+y in R_d^G implies R_0^G[x_1, ... , x_r]
+induction on d:
+  - use generalizing y, because we use inductive hypothesis on alpha
+  - use stong induction instead of normal induction
+-/
+
 theorem finiteType_of_finitely_generated_irrelevant_ideal
     [FiniteType k (𝒜 0)] (h : (irrelevant 𝒜).toIdeal.FG) :
     FiniteType k R := sorry
