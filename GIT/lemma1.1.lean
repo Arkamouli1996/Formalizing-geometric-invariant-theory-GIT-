@@ -47,12 +47,7 @@ class LinearlyReductive (k G : Type*) [Field k] [Group G] where
 --   (4) showing this maximal V_G actually satisfies V = V^G ⊕ V_G
 
 /-- The poset S from the proof of Lemma 1.1.
-    We define S = { T ⊆ V | T is G-stable and T ∩ V^G = 0 }.
-    These are the "candidate complements" to V^G: they are G-stable
-    (so that we stay in the world of G-representations) and disjoint
-    from V^G (so that V^G + T is a direct sum, not just a sum).
-    S is ordered by inclusion. We want a maximal element — that will
-    be our V_G. -/
+    We define S = { T ⊆ V | T is G-stable and T ∩ V^G = 0 }.-/
 def GStableDisjoint (ρ : Representation k G V) : Set (Submodule k V) :=
   { T | IsGStable k G V ρ T ∧ T ⊓ ρ.invariants = ⊥ }
 
