@@ -1,4 +1,4 @@
-# Reynolds Operator
+# Reynolds Operator existence part 1
 
 This file proves that if a linearly reductive group acts on a finite-dimensional vector space, then a Reynolds operator exists.
 
