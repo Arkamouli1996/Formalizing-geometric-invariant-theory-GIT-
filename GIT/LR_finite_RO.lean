@@ -71,12 +71,10 @@ theorem reynoldsOperator_id_on_invariants
   classical
   unfold reynoldsOperator
   simp only [LinearMap.comp_apply]
-
   let C := getComplement k G V ρ
   have hproj :
       ρ.invariants.linearProjOfIsCompl C.1 C.2 v = ⟨v, hv⟩ :=
     Submodule.linearProjOfIsCompl_apply_left C.2 ⟨v, hv⟩
-
   simpa using congrArg ρ.invariants.subtype hproj
 
 /-!
@@ -102,3 +100,36 @@ by
   { toLinearMap := reynoldsOperator k G V ρ
     mem_invariants := reynoldsOperator_mem_invariants k G V ρ
     id_on_invariants := reynoldsOperator_id_on_invariants k G V ρ }
+
+/- Show uniqueness of Reynolds operators -/
+theorem reynoldsOperator_unique
+    [LinearlyReductive k G] (ρ : Representation k G V)
+    (R1 R2 : ReynoldsOperator k G V ρ)
+    (h_ker : R1.toLinearMap.ker = R2.toLinearMap.ker) :
+    R1.toLinearMap = R2.toLinearMap := by
+  ext v
+  /- Use the fact that V = ker(R1) + im(R1) because R1 is a projection -/
+  have h_proj (R : ReynoldsOperator k G V ρ) (x : V) :
+      R.toLinearMap (R.toLinearMap x) = R.toLinearMap x := by
+    apply R.id_on_invariants
+    apply R.mem_invariants
+
+  /- Every v can be written as (v - Rv) + Rv, where (v - Rv) ∈ ker R -/
+  let v_inv := R1.toLinearMap v
+  let v_ker := v - v_inv
+
+  have hv : v = v_ker + v_inv := by rw [sub_add_cancel]
+
+  have m_ker : v_ker ∈ R1.toLinearMap.ker := by
+    rw [LinearMap.mem_ker, LinearMap.map_sub, h_proj R1 v, sub_self]
+
+  /- Now evaluate R1 and R2 on the decomposition -/
+  calc R1.toLinearMap v
+    _ = R1.toLinearMap v_ker + R1.toLinearMap v_inv := by rw [hv, LinearMap.map_add]
+    _ = 0 + v_inv := by
+        rw [LinearMap.mem_ker.mp m_ker, R1.id_on_invariants v_inv (R1.mem_invariants v)]
+    _ = R2.toLinearMap v_ker + R2.toLinearMap v_inv := by
+        rw [h_ker] at m_ker
+        rw [LinearMap.mem_ker.mp m_ker, R2.id_on_invariants v_inv (R1.mem_invariants v), zero_add]
+    _ = R2.toLinearMap (v_ker + v_inv) := by rw [LinearMap.map_add]
+    _ = R2.toLinearMap v := by rw [hv]
