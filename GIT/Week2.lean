@@ -358,17 +358,18 @@ Proof outline:
    Reynolds compatibility `ρ (toR a * r) = a * ρ r`:
    `ρ (x * coeff x) = ρ (toR (lift x) * coeff x) = lift x * ρ (coeff x)`.
 -/
+local notation "Rᴳ₊" => A
+
 theorem reynolds_rewrite
-  /- A will eventually used as the invariant subalgebra `R^G` -/
-    (f : A) (coeff : s → R)
-    (hf : toR f = ∑ x ∈ s.attach, x.val * coeff x)
+    (f : Rᴳ₊) (a_f : s → R)
+    (hf : toR f = ∑ x ∈ s.attach, x.val * a_f x)
     (hlift : ∀ x ∈ s, toR (lift x) = x)
-    (hρ_id : ∀ a : A, ρ (toR a) = a)
-    (hρ_mul : ∀ (a : A) (r : R), ρ ((toR a) * r) = a * ρ r) :
-    f = ∑ x ∈ s.attach, lift x.val * ρ (coeff x) := by
+    (hρ_id : ∀ a : Rᴳ₊, ρ (toR a) = a)
+    (hρ_mul : ∀ (a : Rᴳ₊) (r : R), ρ ((toR a) * r) = a * ρ r) :
+    f = ∑ x ∈ s.attach, lift x.val * ρ (a_f x) := by
   -- (1) Apply ρ to both sides of `hf`:
   --     ρ (toR f) = ρ (∑ x ∈ s.attach, x.val * coeff x).
-  have hρf : ρ (toR f) = ρ (∑ x ∈ s.attach, x.val * coeff x) := by
+  have hρf : ρ (toR f) = ρ (∑ x ∈ s.attach, x.val * a_f x) := by
     rw [hf]
   -- (2) LHS collapses to `f` since `ρ` is the identity on the image of `toR`.
   rw [hρ_id] at hρf
@@ -384,7 +385,7 @@ theorem reynolds_rewrite
   -- LHS into `ρ (x.val * coeff x)`. Using the instantiated `hρ_mul` this way
   -- (rather than `rw [← hlift x.val x.property]` on the goal) avoids
   -- accidentally rewriting the `x.val` that appears inside `coeff x`.
-  have hmul := hρ_mul (lift x.val) (coeff x)
+  have hmul := hρ_mul (lift x.val) (a_f x)
   rw [hlift x.val x.property] at hmul
   exact hmul
 

@@ -109,46 +109,71 @@ This formalizes a key step in Geometric Invariant Theory: the existence of a Rey
 
 Definitions are in `[brackets]`. Arrows show "A is used in the proof of B".
 
+Each theorem node lists: the line number, a one-line statement, and which earlier results it depends on.
+
 ```
 [IsLocallyFinite]          [reynoldsOperator]         [IsLinearlyReductive]     [invariantSubrepresentation]
      (line 79)                (line 115)                   (line 137)                  (line 154)
-        |                      |      |                      |                             |
-        |                      v      v                      |                             |
+  every r lies in a       averaging map               every f.d. rep is          ρ.invariants packaged
+  f.d. G-stable submod    (1/|G|) ∑_g ρ(g)            semisimple                 as a Subrepresentation
+        |                    |        |                      |                             |
+        |                    v        v                      |                             |
         |                  Thm 2    Thm 3                    |                             |
         |               (line 119) (line 124)                |                             |
+        |               Reynolds   Reynolds                  |                             |
+        |               lands in   fixes                     |                             |
+        |               invariants invariants                |                             |
+        |               uses:      uses:                     |                             |
+        |               averageMap_invariant                 |                             |
+        |               averageMap_id                        |                             |
         |                                                    |                             |
-        |                      Thm 4                         |                             |
-        |                   (line 142)                       |                             |
-        |                      |                             |                             |
-        |                      | [Maschke]                   |                             |
-        |                      v                             |                             |
-        |              IsLinearlyReductive.of_fintype -------|                             |
+        |                    Thm 4                           |                             |
+        |                 (line 142)                         |                             |
+        |            "Finite ⇒ linearly reductive"           |                             |
+        |            every f.d. rep of a finite group        |                             |
+        |            with |G| invertible is semisimple       |                             |
+        |                    |                               |                             |
+        |                    | uses: Maschke                 |                             |
+        |                    |       (k[G] semisimple)       |                             |
+        |                    v                               |                             |
+        |            IsLinearlyReductive.of_fintype ---------|                             |
         |                                                    |                             |
         |                                                    v                             |
         |                                                  Thm 5 <-------------------------+
         |                                            (line 164, existence)
-        |                                          uses: IsLinearlyReductive
-        |                                                 invariantSubrepresentation
-        |                                                 IsSemisimpleRepresentation
+        |                                  "Reynolds projection exists for f.d. reps":
+        |                                  ∃ G-equivariant k-linear π : V → V onto V^G
+        |                                  uses: IsLinearlyReductive (semisimplicity)
+        |                                        invariantSubrepresentation (target)
+        |                                        IsSemisimpleRepresentation.exists_isCompl
         |                                                    |
         |                                                    v
         |                                                  Thm 6
-        |                                            (line 209, uniqueness)
-        |                                          uses: IsLinearlyReductive
-        |                                                 Thm 5 (existence)
+        |                                            (line 209, uniqueness — "Lemma A")
+        |                                  "Any two such projections agree":
+        |                                  π₁ = π₂ via complement argument on ker π₁
+        |                                  uses: IsLinearlyReductive (semisimplicity of ker π₁)
+        |                                        Thm 5 implicitly (existence of compatible π's)
         |                                                    |
         |                                                    v
         |                                                  Thm 7
-        |                                            (line 291, naturality)
-        |                                          uses: IsLinearlyReductive
-        |                                                 Thm 6 (uniqueness)
+        |                                            (line 291, naturality — "Lemma B")
+        |                                  "Reynolds commutes with intertwiners":
+        |                                  for ι : V₁ → V₂ G-equivariant, π₂ ∘ ι = ι ∘ π₁
+        |                                  uses: IsLinearlyReductive (semisimplicity of ker π₁)
+        |                                        same complement trick as Thm 6
         |                                                    |
         +----------------------------------------------------+
                                     |
                                     v
                                  Thm 8
                           (line 361, main result)
-                        uses: IsLocallyFinite (hypothesis)
-                               Thm 5 (local projections)
-                               Thm 7 (naturality → well-definedness)
+                  "Reynolds operator for locally finite actions":
+                  G linearly reductive + locally finite action on R
+                  ⇒ ∃ G-equivariant k-linear π : R → R onto R^G
+                  uses: IsLocallyFinite       (chooses local f.d. submodules V(r))
+                         Thm 5                (gives a local projection on each V(r))
+                         Thm 7                (naturality ⇒ local projections glue
+                                               compatibly on V(r) ⊔ V(s), so the
+                                               global map is well-defined and linear)
 ```
