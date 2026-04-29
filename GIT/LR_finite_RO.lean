@@ -17,13 +17,13 @@ STEP 1: Use linear reductivity to obtain a decomposition
 /-- Linearly reductive means: every representation splits as V = V^G ⊕ W' -/
 class LinearlyReductive (k G : Type*) [Field k] [Group G] where
   split_invariants :
-    ∀ (V : Type*) [AddCommGroup V] [Module k V]
+    ∀ (V : Type*) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
       (ρ : Representation k G V),
       ∃ W' : Submodule k V, IsCompl ρ.invariants W'
 
 /-- Extract complement given linear reductivity -/
 noncomputable def getComplement
-    [LinearlyReductive k G] (ρ : Representation k G V) :
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) :
     { W' : Submodule k V // IsCompl ρ.invariants W' } :=
   ⟨_, (LinearlyReductive.split_invariants V ρ).choose_spec⟩
 
@@ -34,7 +34,7 @@ STEP 2: Define projection and inclusion:
         R_V := ι ∘ π
 -/
 noncomputable def reynoldsOperator
-    [LinearlyReductive k G] (ρ : Representation k G V) : V →ₗ[k] V :=
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) : V →ₗ[k] V :=
 by
   classical
   let C := getComplement k G V ρ
@@ -51,7 +51,7 @@ Reason:
 π(v) ∈ V^G by construction, and ι includes V^G into V.
 -/
 theorem reynoldsOperator_mem_invariants
-    [LinearlyReductive k G] (ρ : Representation k G V) (v : V) :
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) (v : V) :
     reynoldsOperator k G V ρ v ∈ ρ.invariants := by
   classical
   unfold reynoldsOperator
@@ -65,7 +65,7 @@ If v ∈ V^G, then in the decomposition V = V^G ⊕ W',
 v has no W' component, so projection returns v.
 -/
 theorem reynoldsOperator_id_on_invariants
-    [LinearlyReductive k G] (ρ : Representation k G V)
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
     (v : V) (hv : v ∈ ρ.invariants) :
     reynoldsOperator k G V ρ v = v := by
   classical
@@ -92,7 +92,7 @@ structure ReynoldsOperator [LinearlyReductive k G]
   id_on_invariants : ∀ v, v ∈ ρ.invariants → toLinearMap v = v
 
 noncomputable def reynoldsOperatorExists
-    [LinearlyReductive k G] (ρ : Representation k G V) :
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) :
     ReynoldsOperator k G V ρ :=
 by
   classical
@@ -113,16 +113,12 @@ theorem reynoldsOperator_unique
       R.toLinearMap (R.toLinearMap x) = R.toLinearMap x := by
     apply R.id_on_invariants
     apply R.mem_invariants
-
   /- Every v can be written as (v - Rv) + Rv, where (v - Rv) ∈ ker R -/
   let v_inv := R1.toLinearMap v
   let v_ker := v - v_inv
-
   have hv : v = v_ker + v_inv := by rw [sub_add_cancel]
-
   have m_ker : v_ker ∈ R1.toLinearMap.ker := by
     rw [LinearMap.mem_ker, LinearMap.map_sub, h_proj R1 v, sub_self]
-
   /- Now evaluate R1 and R2 on the decomposition -/
   calc R1.toLinearMap v
     _ = R1.toLinearMap v_ker + R1.toLinearMap v_inv := by rw [hv, LinearMap.map_add]
