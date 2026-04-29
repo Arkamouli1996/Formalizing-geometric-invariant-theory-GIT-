@@ -23,122 +23,122 @@ lemma Representation.invariants_isStable
   intro g v hv h
   rw [hv g]
   exact hv h
+
 /-
 STEP 1: Use linear reductivity to obtain a decomposition
-        V = V^G ⊕ W'
+        V = W ⊕ W' for any G-stable W
 -/
-/-- Linearly reductive means: every representation splits as V = V^G ⊕ W' -/
+/-- Linearly reductive: every G-stable submodule of a finite-dimensional
+representation has a G-stable complement. -/
 class LinearlyReductive (k G : Type*) [Field k] [Group G] where
-  split_invariants :
+  split_stable :
     ∀ (V : Type*) [AddCommGroup V] [Module k V] [FiniteDimensional k V]
-      (ρ : Representation k G V),
-      ∃ W' : Submodule k V, IsCompl ρ.invariants W'
+      (ρ : Representation k G V) (W : Submodule k V),
+      ρ.IsStable W →
+      ∃ W' : Submodule k V, IsCompl W W' ∧ ρ.IsStable W'
 
-/-- Extract complement given linear reductivity -/
+/-- Extract a G-stable complement of a G-stable submodule W. -/
 noncomputable def getComplement
-    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) :
-    { W' : Submodule k V // IsCompl ρ.invariants W' } :=
-  ⟨_, (LinearlyReductive.split_invariants V ρ).choose_spec⟩
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
+    (W : Submodule k V) (hW : ρ.IsStable W) :
+    { W' : Submodule k V // IsCompl W W' ∧ ρ.IsStable W' } :=
+  ⟨_, (LinearlyReductive.split_stable V ρ W hW).choose_spec⟩
 
 /-
 STEP 2: Define projection and inclusion:
-        π : V → V^G  (projection along W')
-        ι : V^G → V   (inclusion map)
-        R_V := ι ∘ π
+        π : V → W  (projection along G-stable complement)
+        ι : W → V   (inclusion map)
+        R_W := ι ∘ π
 -/
 noncomputable def reynoldsOperator
-    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) : V →ₗ[k] V :=
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
+    (W : Submodule k V) (hW : ρ.IsStable W) : V →ₗ[k] V :=
 by
   classical
-  let C := getComplement k G V ρ
-  let π : V →ₗ[k] ρ.invariants :=
-    ρ.invariants.linearProjOfIsCompl C.1 C.2
-  let ι : ρ.invariants →ₗ[k] V :=
-    ρ.invariants.subtype
+  let C := getComplement k G V ρ W hW
+  let π : V →ₗ[k] W := W.linearProjOfIsCompl C.1 C.2.1
+  let ι : W →ₗ[k] V := W.subtype
   exact ι ∘ₗ π
 
 /-
-STEP 3: R_V(v) lies in V^G
-
-Reason:
-π(v) ∈ V^G by construction, and ι includes V^G into V.
+STEP 3: R_W(v) lies in W
 -/
-theorem reynoldsOperator_mem_invariants
-    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) (v : V) :
-    reynoldsOperator k G V ρ v ∈ ρ.invariants := by
+theorem reynoldsOperator_mem
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
+    (W : Submodule k V) (hW : ρ.IsStable W) (v : V) :
+    reynoldsOperator k G V ρ W hW v ∈ W := by
   classical
   unfold reynoldsOperator
   simp only [LinearMap.comp_apply]
   exact Submodule.coe_mem _
 
 /-
-STEP 4: R_V is identity on invariants
-
-If v ∈ V^G, then in the decomposition V = V^G ⊕ W',
-v has no W' component, so projection returns v.
+STEP 4: R_W is identity on W
 -/
-theorem reynoldsOperator_id_on_invariants
+theorem reynoldsOperator_id_on
     [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
-    (v : V) (hv : v ∈ ρ.invariants) :
-    reynoldsOperator k G V ρ v = v := by
+    (W : Submodule k V) (hW : ρ.IsStable W)
+    (v : V) (hv : v ∈ W) :
+    reynoldsOperator k G V ρ W hW v = v := by
   classical
   unfold reynoldsOperator
   simp only [LinearMap.comp_apply]
-  let C := getComplement k G V ρ
+  let C := getComplement k G V ρ W hW
   have hproj :
-      ρ.invariants.linearProjOfIsCompl C.1 C.2 v = ⟨v, hv⟩ :=
-    Submodule.linearProjOfIsCompl_apply_left C.2 ⟨v, hv⟩
-  simpa using congrArg ρ.invariants.subtype hproj
+      W.linearProjOfIsCompl C.1 C.2.1 v = ⟨v, hv⟩ :=
+    Submodule.linearProjOfIsCompl_apply_left C.2.1 ⟨v, hv⟩
+  simpa using congrArg W.subtype hproj
 
 /-!
 FINAL RESULT:
 
 We package the construction:
-R_V = ι ∘ π satisfies:
-  (a) lands in invariants
-  (b) fixes invariants
+R_W = ι ∘ π satisfies:
+  (a) lands in W
+  (b) fixes W
 -/
 structure ReynoldsOperator [LinearlyReductive k G]
-    (ρ : Representation k G V) where
+    (ρ : Representation k G V) (W : Submodule k V) where
   toLinearMap : V →ₗ[k] V
-  mem_invariants : ∀ v, toLinearMap v ∈ ρ.invariants
-  id_on_invariants : ∀ v, v ∈ ρ.invariants → toLinearMap v = v
+  mem : ∀ v, toLinearMap v ∈ W
+  id_on : ∀ v, v ∈ W → toLinearMap v = v
 
 noncomputable def reynoldsOperatorExists
-    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V) :
-    ReynoldsOperator k G V ρ :=
+    [LinearlyReductive k G] [FiniteDimensional k V] (ρ : Representation k G V)
+    (W : Submodule k V) (hW : ρ.IsStable W) :
+    ReynoldsOperator k G V ρ W :=
 by
   classical
   refine
-  { toLinearMap := reynoldsOperator k G V ρ
-    mem_invariants := reynoldsOperator_mem_invariants k G V ρ
-    id_on_invariants := reynoldsOperator_id_on_invariants k G V ρ }
+  { toLinearMap := reynoldsOperator k G V ρ W hW
+    mem := reynoldsOperator_mem k G V ρ W hW
+    id_on := reynoldsOperator_id_on k G V ρ W hW }
 
-/- Show uniqueness of Reynolds operators -/
+/- Show uniqueness of Reynolds operators (relative to W) -/
 theorem reynoldsOperator_unique
-    [LinearlyReductive k G] (ρ : Representation k G V)
-    (R1 R2 : ReynoldsOperator k G V ρ)
+    [LinearlyReductive k G] (ρ : Representation k G V) (W : Submodule k V)
+    (R1 R2 : ReynoldsOperator k G V ρ W)
     (h_ker : R1.toLinearMap.ker = R2.toLinearMap.ker) :
     R1.toLinearMap = R2.toLinearMap := by
   ext v
-  /- Use the fact that V = ker(R1) + im(R1) because R1 is a projection -/
-  have h_proj (R : ReynoldsOperator k G V ρ) (x : V) :
+  /- Use the fact that V = ker(R) + im(R) because R is a projection onto W -/
+  have h_proj (R : ReynoldsOperator k G V ρ W) (x : V) :
       R.toLinearMap (R.toLinearMap x) = R.toLinearMap x := by
-    apply R.id_on_invariants
-    apply R.mem_invariants
+    apply R.id_on
+    apply R.mem
   /- Every v can be written as (v - Rv) + Rv, where (v - Rv) ∈ ker R -/
-  let v_inv := R1.toLinearMap v
-  let v_ker := v - v_inv
-  have hv : v = v_ker + v_inv := by rw [sub_add_cancel]
+  let v_W := R1.toLinearMap v
+  let v_ker := v - v_W
+  have hv : v = v_ker + v_W := by rw [sub_add_cancel]
   have m_ker : v_ker ∈ R1.toLinearMap.ker := by
     rw [LinearMap.mem_ker, LinearMap.map_sub, h_proj R1 v, sub_self]
   /- Now evaluate R1 and R2 on the decomposition -/
   calc R1.toLinearMap v
-    _ = R1.toLinearMap v_ker + R1.toLinearMap v_inv := by rw [hv, LinearMap.map_add]
-    _ = 0 + v_inv := by
-        rw [LinearMap.mem_ker.mp m_ker, R1.id_on_invariants v_inv (R1.mem_invariants v)]
-    _ = R2.toLinearMap v_ker + R2.toLinearMap v_inv := by
+    _ = R1.toLinearMap v_ker + R1.toLinearMap v_W := by rw [hv, LinearMap.map_add]
+    _ = 0 + v_W := by
+        rw [LinearMap.mem_ker.mp m_ker, R1.id_on v_W (R1.mem v)]
+    _ = R2.toLinearMap v_ker + R2.toLinearMap v_W := by
         rw [h_ker] at m_ker
-        rw [LinearMap.mem_ker.mp m_ker, R2.id_on_invariants v_inv (R1.mem_invariants v), zero_add]
-    _ = R2.toLinearMap (v_ker + v_inv) := by rw [LinearMap.map_add]
+        rw [LinearMap.mem_ker.mp m_ker, R2.id_on v_W (R1.mem v), zero_add]
+    _ = R2.toLinearMap (v_ker + v_W) := by rw [LinearMap.map_add]
     _ = R2.toLinearMap v := by rw [hv]
