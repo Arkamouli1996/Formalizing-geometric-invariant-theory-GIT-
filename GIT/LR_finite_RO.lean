@@ -10,6 +10,19 @@ variable (ρ : Representation k G V)
 /-- Invariants submodule V^G -/
 noncomputable def invariants : Submodule k V := ρ.invariants
 
+/-- A submodule is G-stable if it is preserved by every `ρ g`. -/
+def Representation.IsStable
+    {k G V : Type*} [Field k] [Group G] [AddCommGroup V] [Module k V]
+    (ρ : Representation k G V) (W : Submodule k V) : Prop :=
+  ∀ g : G, ∀ v ∈ W, ρ g v ∈ W
+
+/-- The invariants submodule is G-stable. -/
+lemma Representation.invariants_isStable
+    {k G V : Type*} [Field k] [Group G] [AddCommGroup V] [Module k V]
+    (ρ : Representation k G V) : ρ.IsStable ρ.invariants := by
+  intro g v hv h
+  rw [hv g]
+  exact hv h
 /-
 STEP 1: Use linear reductivity to obtain a decomposition
         V = V^G ⊕ W'
