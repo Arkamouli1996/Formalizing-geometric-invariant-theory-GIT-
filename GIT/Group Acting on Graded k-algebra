@@ -1,0 +1,230 @@
+## Group actions on a graded k-algebra
+
+Let R = ⨁_{d ≥ 0} R_d be a graded k-algebra.
+
+We say that a group G acts on R by graded k-algebra automorphisms if for every g ∈ G, the map
+
+g : R → R
+
+is a k-algebra automorphism and preserves the grading, i.e.
+
+g(R_d) ⊆ R_d for all d ≥ 0.
+
+### k-algebra automorphism
+
+For all a, b ∈ R and λ ∈ k,
+
+- g(a + b) = g(a) + g(b)
+- g(ab) = g(a)g(b)
+These two conditions mean g preserves addition and multiplication,
+so g is a ring homomorphism.
+
+- g(λa) = λg(a)
+This condition means g preserves scalar multiplication,
+so g is k-linear，i.e. linear with respect to scalars from the field k.
+
+If we also have that g is bijective, then g is a k-algebra automorphism
+
+So, intuitively, we can think map g: R → R as a self-map of R preserves the
+algebraic structure(the three conditions) and has an inverse(injectivity + surjectivity).
+Or, basically,
+
+For a map g : R → S,
+
+1. If
+   - g(a + b) = g(a) + g(b),
+   - g(ab) = g(a)g(b),
+   then g is a ring homomorphism.
+
+2. If a ring homomorphism is also bijective, then it is a ring isomorphism.
+
+3. If a ring homomorphism also satisfies
+   - g(λa) = λg(a) for all λ ∈ k,
+   and is bijective,
+   then it is a k-algebra isomorphism.
+
+4. If g : R → R is a k-algebra isomorphism, then g is a k-algebra automorphism.
+
+### Invariant ring
+
+Assume that a group G acts on a graded k-algebra R, and that for every g ∈ G,
+the map g : R → R is a k-algebra automorphism.
+
+Then we can define the invariant subring
+R^G = { r ∈ R : g(r) = r for all g ∈ G }.
+
+If, in addition, each g preserves the grading, i.e.
+g(R_d) ⊆ R_d for all d ≥ 0,
+then R^G inherits a grading:
+R^G = ⊕_{d ≥ 0} (R_d ∩ R^G).
+
+Hence R^G is a graded k-subalgebra of R.
+
+So R^G is a graded k-subalgebra of R.
+-------------------------------------------------------------------------------
+So, if for every g ∈ G, the map g : R → R is a k-algebra automorphism, then
+R^G = { r ∈ R : g(r) = r for all g ∈ G }
+is an invariant subring of R. More precisely, it is a k-subalgebra of R.
+
+If, in addition, the action preserves the grading, i.e.
+g(R_d) ⊆ R_d for all d ≥ 0,
+then the invariant ring also inherits a grading.
+
+Let r ∈ R^G. Since R is graded, we can write
+r = r_0 + r_1 + ··· + r_n,   with r_d ∈ R_d.
+Because r is invariant and the action preserves grading,
+each homogeneous component r_d is also invariant. Hence
+r_d ∈ R_d
+and
+r_d ∈ R^G,
+so
+r_d ∈ R_d ∩ R^G
+
+This shows that the degree-d part of the invariant ring is
+(R^G)_d := R_d ∩ R^G
+
+Therefore,
+R^G = ⊕_{d ≥ 0} (R^G)_d
+    = ⊕_{d ≥ 0} (R_d ∩ R^G)
+
+Hence R^G is a graded k-subalgebra of R.
+------------------------------------------------------------------------------
+- Find the Mathlib definition for invariant subring / subalgebra
+- Find the Mathlib definition for graded algebra
+- Figure out how to express degree-preserving group actions
+- Check whether "R^G inherits a grading" already exists
+- If not, formulate the missing lemma
+------------------------------------------------------------------------------
+Group action on a Ring:
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Ring/Action/Group.html
+If a group acts on a semiring via MulSemiringAction, 
+then each group element induces a ring automorphism.
+Tools:
+MulSemiringAction.toRingEquiv
+MulSemiringAction.toRingEquiv_apply
+MulSemiringAction.toRingEquiv_symm_apply
+So the “each g ∈ G acts by an automorphism of R” part is already available in Mathlib.
+
+Graded algebra:
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/RingTheory/GradedAlgebra/Basic.html
+The basic framework for internally graded rings/algebra.
+Key:
+GradedRing
+GradedAlgebra
+Tools:
+DirectSum.decomposeRingEquiv
+DirectSum.decomposeAlgEquiv
+GradedAlgebra.proj
+So the graded algebra structure itself is already in Mathlib.
+
+invariant subring:
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Ring/Action/Invariant.html
+Notion of invariant subring under an action：
+Tools:
+IsInvariantSubring
+IsInvariantSubring.toMulSemiringAction
+IsInvariantSubring.subtypeHom
+So we have a way to say that a subring is stable under a group action.
+
+preserves grading:
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/RingTheory/GradedAlgebra/Basic.html
+No built-in definition saying directly that a group action “preserves the grading,” 
+i.e. something like
+for every g ∈ G,
+g(R_d) ⊆ R_d
+So this part likely still needs to be defined by us. 
+The graded algebra file gives the grading framework, 
+but not an off-the-shelf interface for degree-preserving group actions.
+-------------------------------------------------------------------------------------------
+1. Start with a graded k-algebra R = ⨁ d, R_d.
+2. Assume G acts on R by k-algebra automorphisms.
+3. Define the invariant subalgebra R^G.
+4. Assume the action preserves grading: g(R_d) ⊆ R_d.
+5. Show each homogeneous component of an invariant element is still invariant.
+6. Define the degree-d piece of R^G by
+      (R^G)_d := R_d ∩ R^G.
+7. Conclude that
+      R^G = ⨁ d, (R^G)_d,
+   so R^G is a graded k-subalgebra of R.
+------------------------------------------------------------------------------------------
+import Mathlib.Algebra.Ring.Action.Group
+import Mathlib.Algebra.Ring.Action.Invariant
+import Mathlib.RingTheory.GradedAlgebra.Basic
+
+open scoped DirectSum
+
+universe u v w
+
+section MinimalChecks
+
+-- Step 0: Basic objects
+
+variable (k : Type u) [Field k]
+variable (G : Type v) [Group G]
+variable (ι : Type w) [DecidableEq ι] [AddMonoid ι]
+variable (R : Type*) [Semiring R] [Algebra k R]
+variable (𝒜 : ι → Submodule k R)
+
+-- Step 1: Check the graded algebra infrastructure
+
+#check GradedAlgebra
+#check GradedAlgebra.proj
+#check DirectSum.decomposeAlgEquiv
+
+-- Step 2: Check group actions on rings / semirings
+
+#check MulSemiringAction
+#check MulSemiringAction.toRingEquiv
+
+-- Step 3: Check invariant subring infrastructure
+
+#check IsInvariantSubring
+
+-- Step 4: Assume R is already graded
+
+variable [GradedAlgebra 𝒜]
+
+-- Step 5: Encode the action by algebra automorphisms
+
+variable (ρ : G →* R ≃ₐ[k] R)
+
+-- Step 6: Define the missing condition: the action preserves the grading
+
+def PreservesGrading : Prop :=
+  ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → (ρ g : R → R) r ∈ 𝒜 d
+
+#check PreservesGrading
+
+-- Step 7: Define the invariant subalgebra R^G
+
+def FixedSubalgebra : Subalgebra k R := by
+  sorry
+
+-- Step 8: Define the degree-d piece of the invariant subalgebra
+
+def FixedPiece (d : ι) : Submodule k R :=
+  𝒜 d ⊓ (FixedSubalgebra (k := k) (G := G) (R := R) (ρ := ρ)).toSubmodule
+
+-- Step 9: Main theorem skeleton:
+-- R^G = ⨁ d, (R_d ∩ R^G)
+
+theorem fixedSubalgebra_decomposes
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)) :
+    True := by
+  /-
+  Intended mathematical content:
+
+    The degree-d part of the invariant subalgebra is
+      (R^G)_d := R_d ∩ R^G
+
+    and we have
+      R^G = ⨁ d, (R_d ∩ R^G).
+
+    Hence R^G is a graded k-subalgebra of R.
+  -/
+  sorry
+
+end MinimalChecks
+
+
+
