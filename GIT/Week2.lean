@@ -439,3 +439,50 @@ theorem RGplusA_le_span_lift_of_reynolds
     f coeff hcoeff hlift hρ_id hρ_mul
 
 end ReynoldsRewrite_S6
+
+/-
+Step 7: Finite generation of `A = R^G` as a `k`-algebra.
+
+This is the conclusion of the Hilbert finiteness argument. The previous steps
+provide:
+
+* (Step 5) The irrelevant ideal `R₊^G` of `A` is finitely generated as an ideal
+  of `A` — `RGplusA_fg_of_reynolds`.
+* (Step 1) `A` decomposes as `⨁ d, (𝒜 d ∩ A)`, i.e. `A` carries an `ℕ`-grading
+  `𝒜G` inherited from `R` — `fixedSubalgebra_decomposes`.
+* (Step 2) For any positively graded `k`-algebra whose irrelevant ideal is
+  finitely generated and whose degree-`0` piece is finitely generated as a
+  `k`-algebra, the whole algebra is finitely generated as a `k`-algebra —
+  `finiteType_of_finitely_generated_irrelevant_ideal`.
+
+Combining these gives `FiniteType k A`. In the GIT setting one typically has
+`(𝒜G) 0 = k`, so the `FiniteType k ((𝒜G) 0)` hypothesis is automatic.
+-/
+
+section FixedSubalgebra_FiniteType_S7
+
+variable (k : Type u) [Field k]
+variable (R : Type*) [CommRing R] [Algebra k R]
+variable (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
+
+-- `A = R^G` together with its inherited `ℕ`-grading `𝒜G`.
+variable (A : Type*) [CommRing A] [Algebra k A]
+variable (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
+
+open Algebra HomogeneousIdeal
+
+/-- **Step 7.**
+The fixed subalgebra `A = R^G` is finitely generated as a `k`-algebra,
+provided:
+
+* its degree-`0` piece `(𝒜G) 0` is finitely generated as a `k`-algebra
+  (automatic when `𝒜G 0 = k`), and
+* its irrelevant ideal `R₊^G = ⨁_{d>0} (𝒜G) d` is finitely generated as an
+  ideal of `A` — supplied by Step 5 (`RGplusA_fg_of_reynolds`). -/
+theorem fixedSubalgebra_finiteType
+    [FiniteType k (𝒜G 0)]
+    (hfg : (irrelevant 𝒜G).toIdeal.FG) :
+    FiniteType k A :=
+  finiteType_of_finitely_generated_irrelevant_ideal k A 𝒜G hfg
+
+end FixedSubalgebra_FiniteType_S7
