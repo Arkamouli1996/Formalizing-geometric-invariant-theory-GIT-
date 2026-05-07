@@ -56,7 +56,7 @@ def IsClosedGInvariant (G : Type u) [Group G] (X : Scheme.{u})
     [MulAction G X.carrier] (W : Set X.carrier) : Prop := sorry
 
 
-/-- **Definition 1.2.1 (Good Quotient).**
+/-- **Definition: Good Quotient.**
 
 For the action of an affine algebraic group `G` on a variety `X`, a morphism
 `φ : X → Y` is a *good quotient* if:
