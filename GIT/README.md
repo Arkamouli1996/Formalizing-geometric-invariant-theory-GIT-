@@ -1,7 +1,28 @@
-# Reynolds Operator existence part 1
+# Reynolds Operator Existence (Part 1)
 
-This file proves that if a linearly reductive group acts on a finite-dimensional vector space, then a Reynolds operator exists.
+This file proves that if a linearly reductive group acts on a finite-dimensional
+k-module, then a Reynolds operator exists for any G-stable submodule.
 
-First it defines what a linearly reductive group is: a group is linearly reductive if for every representation, the invariant subspace `V^G` has a complementary submodule `W'` such that `V = V^G ⊕ W'`.
+We work in the setting of a representation ρ : G → GL(V), where V is a
+finite-dimensional module over a field k.
 
-It then constructs the Reynolds operator as the projection `R : V → V` onto `V^G` along `W'`. We show that `R` sends every element of `V` into the invariants, and everything outside the invariants gets sent to zero. Finally, we prove that this operator is unique. For uniqueness: any `v` splits as a kernel part plus an invariant part. Two operators with the same kernel must agree on both parts, so they are equal.
+First, we define a G-stable submodule: a submodule W ⊆ V is G-stable if it is
+preserved by the group action.
+
+We then define a linearly reductive group as one for which every G-stable
+submodule of a finite-dimensional representation admits a G-stable complement.
+That is, for any such W, there exists W' such that V = W ⊕ W' and W' is also
+G-stable.
+
+Next, we define a Reynolds operator onto a submodule W to be a k-linear map
+R : V → V satisfying:
+- R(v) ∈ W for all v,
+- R acts as the identity on W,
+- R commutes with the group action (i.e., R(ρ(g)v) = ρ(g)(R(v))).
+
+Using the linear reductivity assumption, we construct a Reynolds operator by
+projecting onto W along a G-stable complement W'. The projection map is shown
+to satisfy all required properties, including G-equivariance.
+
+This establishes the existence of a Reynolds operator for any G-stable
+submodule of a finite-dimensional representation of a linearly reductive group.
