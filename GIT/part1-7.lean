@@ -5,7 +5,7 @@ import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Ideal
 import Mathlib.RingTheory.FiniteType
 import Mathlib.RingTheory.Finiteness.Basic
 import Mathlib.RingTheory.Ideal.Maps
-import GIT.Reynold_operator
+import GIT.ReynoldsOperator
 
 open scoped DirectSum
 open scoped BigOperators
