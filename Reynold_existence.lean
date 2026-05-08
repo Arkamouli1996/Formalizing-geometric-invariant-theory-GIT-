@@ -135,7 +135,7 @@ by
 -- 7. Global Reynolds operator
 --------------------------------------------------------------------------------
 
-noncomputable def Reynolds
+noncomputable def Reynolds_operator
   (k G R : Type u)
   [Field k] [Group G]
   [AddCommGroup R] [Module k R] [Module G R]
