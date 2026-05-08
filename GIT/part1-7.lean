@@ -5,6 +5,7 @@ import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Ideal
 import Mathlib.RingTheory.FiniteType
 import Mathlib.RingTheory.Finiteness.Basic
 import Mathlib.RingTheory.Ideal.Maps
+import GIT.Reynold_operator
 
 open scoped DirectSum
 open scoped BigOperators
@@ -565,7 +566,7 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
         (Finsupp.linearCombination R (fun t : (T : Set R) => (t : R)) l) =
           Finset.sum l.support (fun t => l t * (t : R)) := by
       classical
-      simpa [Finsupp.linearCombination_apply, smul_eq_mul, Finsupp.sum]
+      simp [Finsupp.linearCombination_apply, smul_eq_mul, Finsupp.sum]
 
     -- Apply `πd` to `hl` and rewrite the RHS as a sum of `πd` applied to each summand.
     have hproj :
@@ -842,6 +843,16 @@ theorem RGplusA_fg_of_reynolds
 
 end RGplus_generators_S5
 
+/-first define a finite action using -/
+
+/-Step 5.5: Show that R has a reynold operator using our existence proof
+  - since we have a linearly reductive group G acting acting on
+  a finitely generated k-algebra R by a locally finite action,
+  R must have a Reynolds operator
+-/
+theorem reynolds_operator_exists
+    ()
+  extract exists_reynolds_of_locallyFinite
 
 section ReynoldsRewrite_S6
 
@@ -851,7 +862,7 @@ section ReynoldsRewrite_S6
 set_option linter.unusedSectionVars false
 
 variable (k : Type u) [Field k]
-
+variable (G : Type v) [Group G]
 -- `A` is (eventually) the invariant subalgebra `R^G`.
 variable (A : Type*) [CommRing A] [Algebra k A]
 
