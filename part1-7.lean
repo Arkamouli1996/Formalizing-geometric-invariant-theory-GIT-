@@ -1,4 +1,4 @@
--import Mathlib.Algebra.Ring.Action.Group
+import Mathlib.Algebra.Ring.Action.Group
 import Mathlib.Algebra.Ring.Action.Invariant
 import Mathlib.RingTheory.GradedAlgebra.Basic
 import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Ideal
