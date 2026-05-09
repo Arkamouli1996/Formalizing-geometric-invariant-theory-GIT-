@@ -843,16 +843,20 @@ theorem RGplusA_fg_of_reynolds
 
 end RGplus_generators_S5
 
-/-first define a finite action using -/
+/- Step 5.5: Show that R has a Reynolds operator using our existence proof.
 
-/-Step 5.5: Show that R has a reynold operator using our existence proof
-  - since we have a linearly reductive group G acting acting on
-  a finitely generated k-algebra R by a locally finite action,
-  R must have a Reynolds operator
--/
-theorem reynolds_operator_exists
-    ()
-  extract exists_reynolds_of_locallyFinite
+Since we have a linearly reductive group `G` acting on a `k`-module `R` by a locally
+finite action, `R` admits a `Rep`-morphism projection onto the `G`-invariants. This is
+just a re-export of `exists_reynolds_of_locallyFinite` from `GIT.ReynoldsOperator`, made
+available under a name that matches the GIT step numbering. -/
+theorem reynolds_operator_exists {k : Type u} [Field k] {G : Type u} [Group G]
+    (hlr : IsLinearlyReductive k G)
+    (R : Type u) [AddCommGroup R] [Module k R] [DistribMulAction G R] [SMulCommClass G k R]
+    (hlf : Representation.IsLocallyFinite k G R) :
+    ∃ π : Rep.of (Representation.ofDistribMulAction k G R) ⟶
+            Rep.of (Representation.ofDistribMulAction k G R),
+      LinearMap.IsProj (Representation.ofDistribMulAction k G R).invariants π.hom.hom :=
+  exists_reynolds_of_locallyFinite (k := k) G hlr R hlf
 
 section ReynoldsRewrite_S6
 
