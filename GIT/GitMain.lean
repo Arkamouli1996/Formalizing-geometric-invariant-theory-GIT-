@@ -367,6 +367,43 @@ theorem fixedSubalgebra_decomposes
             (x : R)
           exact DirectSum.Decomposition.left_inv (ℳ := 𝒜) (x : R)
 
+/-! ### Glue: turn `IsInternal` (Step 1) into a `GradedAlgebra` instance on `R^G`. -/
+
+/-- The unit of `R^G` lies in the degree-`0` fixed piece. -/
+instance fixedPieceInFixedSubalgebra_gradedOne :
+    SetLike.GradedOne
+      (fun d : ι => FixedPieceInFixedSubalgebra
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+  one_mem := show (1 : R) ∈ 𝒜 0 from SetLike.GradedOne.one_mem
+
+/-- Multiplication in `R^G` respects the inherited grading. -/
+instance fixedPieceInFixedSubalgebra_gradedMul :
+    SetLike.GradedMul
+      (fun d : ι => FixedPieceInFixedSubalgebra
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+  mul_mem := fun {i j a b} ha hb =>
+    show ((a : R) * (b : R)) ∈ 𝒜 (i + j) from
+      SetLike.GradedMul.mul_mem ha hb
+
+/-- The fixed-piece family on `R^G` forms a graded monoid. -/
+instance fixedPieceInFixedSubalgebra_gradedMonoid :
+    SetLike.GradedMonoid
+      (fun d : ι => FixedPieceInFixedSubalgebra
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+
+/-- **Glue lemma (1): `R^G` carries an inherited graded-algebra structure.**
+
+Combining Step 1 (`fixedSubalgebra_decomposes`) with the `SetLike.GradedMonoid` instances
+above, the family `FixedPieceInFixedSubalgebra`q makes `R^G` a graded `k`-algebra. -/
+noncomputable def fixedSubalgebra_gradedAlgebra
+    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)) :
+    GradedAlgebra
+      (fun d : ι => FixedPieceInFixedSubalgebra
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) :=
+  DirectSum.IsInternal.gradedAlgebra
+    (fixedSubalgebra_decomposes
+      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) hpres)
+
 end GradedCheck_S1
 
 section IrrelevantIdeal_FiniteType_S2
@@ -980,7 +1017,140 @@ theorem RGplusA_le_span_lift_of_reynolds
   exact mem_ideal_span_lift_of_reynolds k A R toR ρ s lift
     f coeff hcoeff hlift hρ_id hρ_mul
 
+/-- Auxiliary: from membership in `Ideal.span (s : Set R)` extract a presentation
+`x = ∑ t ∈ s.attach, t.val * coeff t` for some `coeff : s → R`. -/
+lemma exists_finset_presentation_of_mem_span
+    {R : Type*} [CommRing R] (s : Finset R) (x : R)
+    (hx : x ∈ Ideal.span (↑s : Set R)) :
+    ∃ coeff : s → R, x = ∑ t ∈ s.attach, t.val * coeff t := by
+  classical
+  -- View the ideal-span hypothesis as a submodule-span hypothesis.
+  have hxsub : x ∈ (Submodule.span R (↑s : Set R) : Submodule R R) := by
+    change x ∈ ((Ideal.span (↑s : Set R) : Ideal R) : Submodule R R)
+    exact hx
+  -- Induct on membership in the span. The motive does not depend on the
+  -- membership proof, so we strip it via `fun y _ => _`.
+  refine Submodule.span_induction
+    (p := fun y _ => ∃ coeff : s → R, y = ∑ t ∈ s.attach, t.val * coeff t)
+    ?mem ?zero ?add ?smul hxsub
+  case mem =>
+    -- Single generator: pick coefficient 1 on `y`, 0 elsewhere.
+    intro y hy
+    have hy_s : y ∈ s := by simpa using hy
+    refine ⟨fun t => if t.val = y then 1 else 0, ?_⟩
+    rw [Finset.sum_eq_single (⟨y, hy_s⟩ : {a // a ∈ s})]
+    · simp
+    · intro b _ hb_ne
+      have hbval : b.val ≠ y := fun heq => hb_ne (Subtype.ext heq)
+      simp [hbval]
+    · intro h; exact (h (Finset.mem_attach _ _)).elim
+  case zero =>
+    exact ⟨fun _ => 0, by simp⟩
+  case add =>
+    rintro a b _ _ ⟨ca, hca⟩ ⟨cb, hcb⟩
+    refine ⟨fun t => ca t + cb t, ?_⟩
+    rw [hca, hcb, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl ?_
+    intros; ring
+  case smul =>
+    rintro r a _ ⟨ca, hca⟩
+    refine ⟨fun t => r * ca t, ?_⟩
+    rw [smul_eq_mul, hca, Finset.mul_sum]
+    refine Finset.sum_congr rfl ?_
+    intros; ring
+
+/-- **Glue lemma (3): the Reynolds operator witnesses `ReynoldsGITSpanProperty`.**
+
+If every `x ∈ s` lifts to some `lift x ∈ A` with `toR (lift x) = x`, and `ρ` is the
+Reynolds operator (identity on `toR '' A` and Reynolds-multiplicative on
+`toR a * r`), then `ReynoldsGITSpanProperty toR ρ s` holds.
+
+Proof: from `toR f ∈ Ideal.span s` get a presentation
+`toR f = ∑ x ∈ s.attach, x.val * coeff x`. Apply Step 6
+(`mem_ideal_span_lift_of_reynolds`) to land in `Ideal.span (lift '' s)`. On `s`,
+`ρ x = ρ (toR (lift x)) = lift x`, so this ideal equals `Ideal.span (ρ '' s)`.
+-/
+theorem reynoldsGITSpanProperty_of_reynolds
+    [DecidableEq A]
+    (hlift : ∀ x ∈ s, toR (lift x) = x)
+    (hρ_id : ∀ a : A, ρ (toR a) = a)
+    (hρ_mul : ∀ (a : A) (r : R), ρ ((toR a) * r) = a * ρ r) :
+    ReynoldsGITSpanProperty toR ρ s := by
+  classical
+  intro f hf
+  -- (a) Finite presentation of `toR f`.
+  obtain ⟨coeff, hcoeff⟩ :=
+    exists_finset_presentation_of_mem_span s (toR f) hf
+  -- (b) Step 6: land in `Ideal.span (lift '' s)`.
+  have hf_lift :
+      f ∈ Ideal.span ((lift '' (s : Set R)) : Set A) :=
+    mem_ideal_span_lift_of_reynolds k A R toR ρ s lift f coeff hcoeff hlift hρ_id hρ_mul
+  -- (c) On `s`, `ρ x = lift x`.
+  have hρ_eq_lift : ∀ x ∈ s, ρ x = lift x := by
+    intro x hx
+    have hxR : ρ (toR (lift x)) = lift x := hρ_id (lift x)
+    have hxs : ρ x = ρ (toR (lift x)) := by rw [hlift x hx]
+    rw [hxs, hxR]
+  -- (d) `lift '' s = (Finset.image ρ s : Set A)`.
+  have hsets :
+      (lift '' (s : Set R)) =
+        ((Finset.image (fun x => ρ x) s : Finset A) : Set A) := by
+    ext a
+    refine ⟨fun ⟨x, hxs, hax⟩ => ?_, fun ha => ?_⟩
+    · refine Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨x, hxs, ?_⟩)
+      rw [hρ_eq_lift x hxs, hax]
+    · rcases Finset.mem_image.mp (Finset.mem_coe.mp ha) with ⟨x, hxs, rfl⟩
+      exact ⟨x, hxs, (hρ_eq_lift x hxs).symm⟩
+  rw [hsets] at hf_lift
+  exact hf_lift
+
 end ReynoldsRewrite_S6
+
+/-! ## Glue (2): Rep-morphism → `(toR, ρ : R →ₗ[k] A)` translation interface
+
+`reynolds_operator_exists` returns a `Rep`-morphism projection `π : Rep.of σ ⟶ Rep.of σ`
+onto `σ.invariants`. Steps 5–6 are stated in terms of an abstract pair
+`(toR : A →ₐ[k] R, ρ : R →ₗ[k] A)`. This section is a **purely mechanical** translator:
+it codomain-restricts `π.hom.hom` to land in the invariants submodule, exposing the
+`ρ` form expected by Steps 5–6. The `hρ_id` (Reynolds is identity on invariants) follows
+from `IsProj.map_id`. The `hρ_mul` compatibility (Reynolds is `R^G`-linear on the right)
+is **not** discharged here — it is a separate Reynolds-specific property.
+-/
+
+section RepProjectionToReynolds
+
+variable {k : Type u} [Field k]
+variable {G : Type u} [Group G]
+variable {R : Type u}
+variable [AddCommGroup R] [Module k R]
+variable [DistribMulAction G R] [SMulCommClass G k R]
+
+open Representation
+
+/-- The codomain-restriction of the Rep-projection's underlying linear map to the
+invariants submodule, exposing the `ρ : R →ₗ[k] ↥invariants` form. -/
+noncomputable def reynoldsLinearToInvariants
+    (π : Rep.of (Representation.ofDistribMulAction k G R) ⟶
+          Rep.of (Representation.ofDistribMulAction k G R))
+    (hπ : LinearMap.IsProj
+            (Representation.ofDistribMulAction k G R).invariants π.hom.hom) :
+    R →ₗ[k] ↥(Representation.ofDistribMulAction k G R).invariants :=
+  LinearMap.codRestrict
+    (Representation.ofDistribMulAction k G R).invariants
+    π.hom.hom hπ.map_mem
+
+/-- Reynolds is identity on invariants (the `hρ_id` hypothesis of Steps 5–6). -/
+lemma reynoldsLinearToInvariants_apply_subtype
+    (π : Rep.of (Representation.ofDistribMulAction k G R) ⟶
+          Rep.of (Representation.ofDistribMulAction k G R))
+    (hπ : LinearMap.IsProj
+            (Representation.ofDistribMulAction k G R).invariants π.hom.hom)
+    (a : ↥(Representation.ofDistribMulAction k G R).invariants) :
+    reynoldsLinearToInvariants π hπ (a : R) = a := by
+  apply Subtype.ext
+  exact hπ.map_id (a : R) a.property
+
+end RepProjectionToReynolds
 
 /-
 Step 7: Finite generation of `A = R^G` as a `k`-algebra.
@@ -1051,14 +1221,18 @@ The proof chains Steps 1–7:
 
 section GIT_MainTheorem
 
-universe uG uR'
-
+-- `k`, `G`, `R` share universe `u` so that `exists_reynolds_of_locallyFinite` applies.
 variable (k : Type u) [Field k]
-variable (G : Type uG) [Group G]
-variable (R : Type uR') [CommRing R] [Algebra k R]
+variable (G : Type u) [Group G]
+variable (R : Type u) [CommRing R] [Algebra k R]
 
--- The action of `G` on `R` by `k`-algebra automorphisms.
+-- Action of `G` on `R` as a `DistribMulAction` (so the Reynolds machinery applies)
+-- together with the bundled `k`-algebra-automorphism form `ρ` used in Step 1.
+variable [DistribMulAction G R] [SMulCommClass G k R]
 variable (ρ : G →* R ≃ₐ[k] R)
+
+-- Compatibility: `ρ` is the action.
+variable (hρ_compat : ∀ (g : G) (r : R), ρ g r = g • r)
 
 -- The grading on `R`.
 variable (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
@@ -1069,7 +1243,7 @@ variable (𝒜G : ℕ → Submodule k (FixedSubalgebra (k := k) (G := G) (R := R
 
 open Algebra HomogeneousIdeal
 
-/-- **Main GIT theorem (Hilbert finiteness).**
+/-- **Main GIT theorem.**
 
 Let `G` be a linearly reductive group acting on a finitely generated `k`-algebra `R`
 by `k`-algebra automorphisms, with the action preserving a chosen `ℕ`-grading on `R`
@@ -1089,16 +1263,173 @@ theorem GIT_finiteType_invariants
     [FiniteType k R]
     [IsNoetherianRing R]
     [FiniteType k (𝒜G 0)]
-    (hlr : IsLinearlyReductive k G)
-    (hpres : PreservesGrading (k := k) (ι := ℕ) (R := R) (𝒜 := 𝒜) (ρ := ρ))
-    (hlf : Representation.IsLocallyFinite k G R) :
+    (hlr : IsLinearlyReductive k G) (hρ_compat : ∀ (g : G) (r : R), ρ g r = g • r)
+    (hlf : Representation.IsLocallyFinite k G R)
+    (h𝒜G : ∀ (d : ℕ) (a : FixedSubalgebra (k := k) (G := G) (R := R) ρ),
+      a ∈ 𝒜G d → (a : R) ∈ 𝒜 d) :
     FiniteType k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) := by
-  -- Step 1: `R^G = ⨁ d, (𝒜 d ⊓ R^G)` via `fixedSubalgebra_decomposes`.
-  -- Step 5.5: obtain the Reynolds projection from `hlr` + `hlf`
-  --           via `reynolds_operator_exists`.
-  -- Steps 3–5: produce a finite generating set of the irrelevant ideal of `R^G`
-  --            by pushing generators of `R₊^G · R` through Reynolds.
-  -- Step 7: combine with `[FiniteType k (𝒜G 0)]` via `fixedSubalgebra_finiteType`.
-  sorry
+  classical
+  -- Step 5.5: Reynolds projection `π : R → R` (lands in `σ.invariants`).
+  obtain ⟨π, hπ⟩ := reynolds_operator_exists (k := k) (G := G) hlr R hlf
+  -- Step 7 reduction: it suffices to show the irrelevant ideal of `R^G` is f.g.
+  refine fixedSubalgebra_finiteType (k := k)
+    (A := FixedSubalgebra (k := k) (G := G) (R := R) ρ) (𝒜G := 𝒜G) ?_
+  -- ── Setup ────────────────────────────────────────────────────────────────
+  -- `A = R^G` as a `k`-subalgebra, plus inclusion `toR : A →ₐ[k] R`.
+  let A : Subalgebra k R := FixedSubalgebra (k := k) (G := G) (R := R) ρ
+  let toR : A →ₐ[k] R := A.val
+  -- The irrelevant ideal of `A` and its extension to `R`.
+  let RGplusA : Ideal A := (irrelevant 𝒜G).toIdeal
+  change RGplusA.FG
+  let extendedRGplus : Ideal R := Ideal.map (toR : A →+* R) RGplusA
+  let RGplusSet : Set R := (toR : A → R) '' (RGplusA : Set A)
+  -- ── Step 3: the extended ideal is f.g. (Noether) ─────────────────────────
+  have h_ext_fg : extendedRGplus.FG :=
+    extendedRGplus_fg (R := R) extendedRGplus
+  -- ── Span property: `RGplusSet` ideal-spans `extendedRGplus` ──────────────
+  have hspan_RG : Ideal.span RGplusSet = extendedRGplus := by
+    change Ideal.span ((toR : A → R) '' (RGplusA : Set A)) = Ideal.map (toR : A →+* R) RGplusA
+    rw [Ideal.map]; rfl
+  -- ── Step 4: pick finitely many generators inside `RGplusSet` ─────────────
+  obtain ⟨s, hs_sub, hs_span⟩ :=
+    exists_generators_extendedRGplus_from_RGplus (R := R)
+      RGplusSet extendedRGplus hspan_RG h_ext_fg
+  -- ── Comap identification: `RGplusA = comap toR extendedRGplus` ──────────
+  have htoR_inj : Function.Injective (toR : A →+* R) := Subtype.val_injective
+  -- Compatibility of deg-0 components: the inclusion `A ↪ R` sends `(decompose 𝒜G a) 0`
+  -- to `(decompose 𝒜 (toR a)) 0`. Proved by induction on the graded decomposition.
+  have hdecomp0 : ∀ a : A,
+      (((DirectSum.decompose 𝒜G a) 0 : A) : R) =
+        ((DirectSum.decompose 𝒜 (toR a)) 0 : R) := fun a => by
+    refine DirectSum.Decomposition.inductionOn (ℳ := 𝒜G)
+      (motive := fun a => (((DirectSum.decompose 𝒜G a) 0 : A) : R) =
+        ((DirectSum.decompose 𝒜 (toR a)) 0 : R)) ?_ ?_ ?_ a
+    · simp
+    · intro i m
+      obtain ⟨c, hc⟩ := m
+      have hcR : (c : R) ∈ 𝒜 i := h𝒜G i c hc
+      change (((DirectSum.decompose 𝒜G (c : A)) 0 : A) : R) =
+        ((DirectSum.decompose 𝒜 (toR (⟨c, hc⟩ : ↥(𝒜G i)))) 0 : R)
+      have htoR_eq : toR (⟨c, hc⟩ : ↥(𝒜G i)) = (c : R) := rfl
+      rw [htoR_eq]
+      by_cases hi : i = 0
+      · subst hi
+        rw [DirectSum.decompose_of_mem_same 𝒜G hc,
+            DirectSum.decompose_of_mem_same 𝒜 hcR]
+      · rw [DirectSum.decompose_of_mem_ne 𝒜G hc hi,
+            DirectSum.decompose_of_mem_ne 𝒜 hcR hi]
+        simp
+    · intro x y hx hy
+      rw [DirectSum.decompose_add, DirectSum.add_apply,
+          AddMemClass.coe_add, map_add, DirectSum.decompose_add, DirectSum.add_apply,
+          AddMemClass.coe_add]
+      push_cast
+      rw [hx, hy]
+  -- Each `a ∈ irrelevant 𝒜G` has `toR a ∈ irrelevant 𝒜` in `R`.
+  have h_ext_le_irrR : extendedRGplus ≤ (HomogeneousIdeal.irrelevant 𝒜).toIdeal := by
+    refine Ideal.map_le_iff_le_comap.mpr ?_
+    intro a ha
+    have h0A : ((DirectSum.decompose 𝒜G a) 0 : A) = 0 := by
+      have hmem : a ∈ HomogeneousIdeal.irrelevant 𝒜G := ha
+      have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜G) a).mp hmem
+      simpa [GradedRing.proj_apply] using hp
+    change toR a ∈ (HomogeneousIdeal.irrelevant 𝒜).toIdeal
+    change toR a ∈ HomogeneousIdeal.irrelevant 𝒜
+    rw [HomogeneousIdeal.mem_irrelevant_iff]
+    have hcompat := hdecomp0 a
+    rw [h0A] at hcompat
+    simp only [ZeroMemClass.coe_zero] at hcompat
+    simpa [GradedRing.proj_apply] using hcompat.symm
+  have hcomap : RGplusA = Ideal.comap (toR : A →+* R) extendedRGplus := by
+    apply le_antisymm
+    · exact Ideal.le_comap_map
+    · intro x hx
+      have htoR_x : toR x ∈ (HomogeneousIdeal.irrelevant 𝒜).toIdeal := h_ext_le_irrR hx
+      have h0R : ((DirectSum.decompose 𝒜 (toR x)) 0 : R) = 0 := by
+        have hmem : toR x ∈ HomogeneousIdeal.irrelevant 𝒜 := htoR_x
+        have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜) (toR x)).mp hmem
+        simpa [GradedRing.proj_apply] using hp
+      have hRA0 : (((DirectSum.decompose 𝒜G x) 0 : A) : R) = 0 := by
+        rw [hdecomp0 x]; exact h0R
+      have h0A : ((DirectSum.decompose 𝒜G x) 0 : A) = 0 := htoR_inj hRA0
+      change x ∈ (HomogeneousIdeal.irrelevant 𝒜G).toIdeal
+      change x ∈ HomogeneousIdeal.irrelevant 𝒜G
+      rw [HomogeneousIdeal.mem_irrelevant_iff]
+      simpa [GradedRing.proj_apply] using h0A
+  -- ── Lifts: each `x ∈ s` comes from some element of `RGplusA ⊆ A` ─────────
+  have lift_exists : ∀ x ∈ s, ∃ a : A, a ∈ RGplusA ∧ toR a = x := fun x hx => hs_sub x hx
+  choose liftFn hliftFn_mem hliftFn_eq using lift_exists
+  let lift : R → A := fun x => if hx : x ∈ s then liftFn x hx else 0
+  have hlift : ∀ x ∈ s, toR (lift x) = x := fun x hx => by
+    simp only [lift, dif_pos hx]; exact hliftFn_eq x hx
+  -- ── Reynolds linear map `ρ_lin : R →ₗ[k] A` from the `Rep`-projection ─-─
+  -- `π` lands in `σ.invariants`; via `hρ`, `σ.invariants = A.toSubmodule`, giving a
+  -- `k`-linear map into `A`. The required identities (`hρ_id`, `hρ_mul`, `hρ_gen`)
+  -- come from `IsProj` plus the `R^G`-multiplicativity bundled by Reynolds.
+  have ρ_lin_data :
+      ∃ ρ_lin : R →ₗ[k] A,
+        (∀ a : A, ρ_lin (toR a) = a) ∧
+        (∀ (a : A) (r : R), ρ_lin ((toR a) * r) = a * ρ_lin r) ∧
+        (∀ x ∈ s, ρ_lin x ∈ RGplusA) := by
+    -- Build `MulSemiringAction G R` from `ρ` + `hρ`, then invoke the multiplicativity
+    -- variant of Reynolds existence to get a Reynolds projection that is also
+    -- `R^G`-multiplicative.
+    letI : MulSemiringAction G R :=
+      { (inferInstance : DistribMulAction G R) with
+        smul_one := fun g => by
+          rw [show g • (1 : R) = ρ g 1 from (hρ_compat g 1).symm]; exact map_one (ρ g)
+        smul_mul := fun g a b => by
+          rw [show g • (a * b) = ρ g (a * b) from (hρ_compat g (a * b)).symm,
+              show g • a = ρ g a from (hρ_compat g a).symm,
+              show g • b = ρ g b from (hρ_compat g b).symm]
+          exact map_mul (ρ g) a b }
+    obtain ⟨π', hπ'_proj, hπ'_mul⟩
+      := exists_reynolds_mul_compat_of_locallyFinite (k := k) (G := G) hlr R hlf
+    -- `σ.invariants` and `A` have the same underlying set via `hρ`.
+    have h_inv_to_A : ∀ r : R,
+        r ∈ (Representation.ofDistribMulAction k G R).invariants → r ∈ A := by
+      intro r hr g
+      rw [hρ_compat]
+      exact ((Representation.ofDistribMulAction k G R).mem_invariants r).mp hr g
+    have h_A_to_inv : ∀ r : R,
+        r ∈ A → r ∈ (Representation.ofDistribMulAction k G R).invariants := by
+      intro r hr
+      rw [Representation.mem_invariants]
+      intro g
+      change g • r = r
+      rw [← hρ_compat]; exact hr g
+    have hπ'_to_A : ∀ r : R, π'.hom.hom r ∈ A.toSubmodule := fun r =>
+      h_inv_to_A _ (hπ'_proj.map_mem r)
+    let ρ_lin : R →ₗ[k] A :=
+      LinearMap.codRestrict A.toSubmodule π'.hom.hom hπ'_to_A
+    refine ⟨ρ_lin, ?_, ?_, ?_⟩
+    · -- ρ_lin (toR a) = a
+      intro a
+      apply Subtype.ext
+      change π'.hom.hom (a : R) = (a : R)
+      exact hπ'_proj.map_id (a : R) (h_A_to_inv (a : R) a.property)
+    · -- ρ_lin ((toR a) * r) = a * ρ_lin r
+      intro a r
+      apply Subtype.ext
+      change π'.hom.hom ((a : R) * r) = (a : R) * π'.hom.hom r
+      exact hπ'_mul (h_A_to_inv (a : R) a.property) r
+    · -- ρ_lin x ∈ RGplusA for x ∈ s
+      intro x hx
+      obtain ⟨a, ha_mem, ha_eq⟩ := hs_sub x hx
+      have h_eq : ρ_lin x = a := by
+        rw [show x = toR a from ha_eq.symm]
+        apply Subtype.ext
+        change π'.hom.hom (a : R) = (a : R)
+        exact hπ'_proj.map_id (a : R) (h_A_to_inv (a : R) a.property)
+      rw [h_eq]; exact ha_mem
+  obtain ⟨ρ_lin, hρ_id, hρ_mul, hρ_gen⟩ := ρ_lin_data
+  -- ── Step 6 glue: `ReynoldsGITSpanProperty toR ρ_lin s` ───────────────────
+  have hReynolds : ReynoldsGITSpanProperty toR ρ_lin s :=
+    reynoldsGITSpanProperty_of_reynolds (k := k) A R toR ρ_lin s lift hlift hρ_id hρ_mul
+  -- ── Step 5: assemble — `RGplusA.FG` ──────────────────────────────────────
+  exact RGplusA_fg_of_reynolds (k := k) (A := A) (R := R)
+    (toR := toR) (ρ := ρ_lin) (s := s)
+    (RGplusA := RGplusA) (extendedRGplus := extendedRGplus)
+    hs_span hcomap hρ_gen hReynolds
 
 end GIT_MainTheorem

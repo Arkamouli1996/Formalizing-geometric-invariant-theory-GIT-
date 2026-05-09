@@ -566,4 +566,304 @@ theorem exists_reynolds_of_locallyFinite
               exact ((Mamb.ρ.mem_invariants _).mp (hπ_proj_global.map_mem r) g).symm }, ?_⟩
   exact hπ_proj_global
 
+/-- **Locally-finite Reynolds uniqueness.** Any two Rep-morphism projections onto the
+invariants of `Rep.of (ofDistribMulAction k G R)` agree, when `G` is linearly reductive
+and the `G`-action on `R` is locally finite.
+
+Proof strategy (TODO): for each `r`, pick `W` f.d. G-stable containing `r`, `π₁(r)`,
+`π₂(r)` (the latter two extend `r`'s f.d. neighborhood by 1-dim G-stable rays through
+invariants). Iterate `W ↦ W + π₁(W) + π₂(W)` finitely many times until stable, obtaining
+a f.d. G-stable subspace `W'` closed under both projections. Then `π₁|_{W'}, π₂|_{W'}`
+are Rep-projections onto `W'^G`, and `reynolds_unique` (f.d. version) forces equality. -/
+theorem IsLinearlyReductive.reynolds_unique_locallyFinite
+    (hlr : IsLinearlyReductive k G)
+    (R : Type u) [AddCommGroup R] [Module k R] [DistribMulAction G R] [SMulCommClass G k R]
+    (hlf : Representation.IsLocallyFinite k G R)
+    (π₁ π₂ : Rep.of (Representation.ofDistribMulAction k G R) ⟶
+              Rep.of (Representation.ofDistribMulAction k G R))
+    (h₁ : LinearMap.IsProj
+            (Representation.ofDistribMulAction k G R).invariants π₁.hom.hom)
+    (h₂ : LinearMap.IsProj
+            (Representation.ofDistribMulAction k G R).invariants π₂.hom.hom) :
+    π₁ = π₂ := by
+  let σ : Representation k G R := Representation.ofDistribMulAction k G R
+  let Mamb : Rep k G := Rep.of σ
+  let p₁ : R →ₗ[k] R := π₁.hom.hom
+  let p₂ : R →ₗ[k] R := π₂.hom.hom
+  -- Equivariance of `Rep` morphisms.
+  have hp₁_equiv : ∀ (g : G) (r : R), p₁ (σ g r) = σ g (p₁ r) := fun g r =>
+    Rep.hom_comm_apply π₁ g r
+  have hp₂_equiv : ∀ (g : G) (r : R), p₂ (σ g r) = σ g (p₂ r) := fun g r =>
+    Rep.hom_comm_apply π₂ g r
+  -- Reduce to pointwise equality on R.
+  apply Action.hom_ext
+  apply ModuleCat.hom_ext
+  ext r
+  change p₁ r = p₂ r
+  -- Pick a f.d. G-stable submodule V containing r.
+  obtain ⟨V, hV_fin, hV_stable, hV_mem⟩ := hlf r
+  have hV_comap : ∀ g, V ≤ V.comap (σ g) := fun g v hv => hV_stable g ⟨v, hv⟩
+  -- W = V + p₁(V) + p₂(V) — f.d., G-stable, closed under p₁ and p₂.
+  let W : Submodule k R := V ⊔ Submodule.map p₁ V ⊔ Submodule.map p₂ V
+  -- Both pᵢ(V) lie inside the invariants (so are G-stable).
+  have hp₁V_inv : Submodule.map p₁ V ≤ σ.invariants := by
+    rintro x ⟨v, _, rfl⟩; exact h₁.map_mem v
+  have hp₂V_inv : Submodule.map p₂ V ≤ σ.invariants := by
+    rintro x ⟨v, _, rfl⟩; exact h₂.map_mem v
+  -- W is G-stable.
+  have hW_stable : ∀ g, W ≤ W.comap (σ g) := by
+    intro g w hw
+    rcases Submodule.mem_sup.mp hw with ⟨a, ha, c, hc, rfl⟩
+    rcases Submodule.mem_sup.mp ha with ⟨a₁, ha₁, a₂, ha₂, rfl⟩
+    have h_a₁ : σ g a₁ ∈ V := hV_stable g ⟨a₁, ha₁⟩
+    have h_a₂ : σ g a₂ ∈ Submodule.map p₁ V := by
+      rw [(σ.mem_invariants a₂).mp (hp₁V_inv ha₂) g]; exact ha₂
+    have h_c : σ g c ∈ Submodule.map p₂ V := by
+      rw [(σ.mem_invariants c).mp (hp₂V_inv hc) g]; exact hc
+    change σ g (a₁ + a₂ + c) ∈ W
+    rw [map_add, map_add]
+    refine Submodule.add_mem _ (Submodule.add_mem _ ?_ ?_) ?_
+    · exact Submodule.mem_sup_left (Submodule.mem_sup_left h_a₁)
+    · exact Submodule.mem_sup_left (Submodule.mem_sup_right h_a₂)
+    · exact Submodule.mem_sup_right h_c
+  -- Finite-dimensionality of W.
+  haveI : Module.Finite k V := hV_fin
+  have map_finite : ∀ (p : R →ₗ[k] R), Module.Finite k ↥(Submodule.map p V) := by
+    intro p
+    let f : V →ₗ[k] ↥(Submodule.map p V) :=
+      LinearMap.codRestrict (Submodule.map p V) (p ∘ₗ V.subtype)
+        (fun v => Submodule.mem_map.mpr ⟨v.1, v.2, rfl⟩)
+    have hf : Function.Surjective f := by
+      rintro ⟨x, hx⟩
+      obtain ⟨v, hv, hvx⟩ := Submodule.mem_map.mp hx
+      exact ⟨⟨v, hv⟩, Subtype.ext hvx⟩
+    exact Module.Finite.of_surjective f hf
+  haveI : FiniteDimensional k V := hV_fin
+  haveI : FiniteDimensional k ↥(Submodule.map p₁ V) := map_finite p₁
+  haveI : FiniteDimensional k ↥(Submodule.map p₂ V) := map_finite p₂
+  haveI : FiniteDimensional k ↥(V ⊔ Submodule.map p₁ V : Submodule k R) :=
+    Submodule.finiteDimensional_sup _ _
+  haveI : FiniteDimensional k ↥W := Submodule.finiteDimensional_sup _ _
+  -- p₁ maps W into W.
+  have hp₁_W : ∀ w ∈ W, p₁ w ∈ W := by
+    intro w hw
+    rcases Submodule.mem_sup.mp hw with ⟨a, ha, c, hc, rfl⟩
+    rcases Submodule.mem_sup.mp ha with ⟨a₁, ha₁, a₂, ha₂, rfl⟩
+    rw [map_add, map_add]
+    refine Submodule.add_mem _ (Submodule.add_mem _ ?_ ?_) ?_
+    · exact Submodule.mem_sup_left (Submodule.mem_sup_right ⟨a₁, ha₁, rfl⟩)
+    · rw [h₁.map_id a₂ (hp₁V_inv ha₂)]
+      exact Submodule.mem_sup_left (Submodule.mem_sup_right ha₂)
+    · rw [h₁.map_id c (hp₂V_inv hc)]
+      exact Submodule.mem_sup_right hc
+  -- p₂ maps W into W.
+  have hp₂_W : ∀ w ∈ W, p₂ w ∈ W := by
+    intro w hw
+    rcases Submodule.mem_sup.mp hw with ⟨a, ha, c, hc, rfl⟩
+    rcases Submodule.mem_sup.mp ha with ⟨a₁, ha₁, a₂, ha₂, rfl⟩
+    rw [map_add, map_add]
+    refine Submodule.add_mem _ (Submodule.add_mem _ ?_ ?_) ?_
+    · exact Submodule.mem_sup_right ⟨a₁, ha₁, rfl⟩
+    · rw [h₂.map_id a₂ (hp₁V_inv ha₂)]
+      exact Submodule.mem_sup_left (Submodule.mem_sup_right ha₂)
+    · rw [h₂.map_id c (hp₂V_inv hc)]
+      exact Submodule.mem_sup_right hc
+  have hr_W : r ∈ W := Submodule.mem_sup_left (Submodule.mem_sup_left hV_mem)
+  -- Restrict p₁, p₂ to W.
+  let q₁ : ↥W →ₗ[k] ↥W := LinearMap.restrict p₁ hp₁_W
+  let q₂ : ↥W →ₗ[k] ↥W := LinearMap.restrict p₂ hp₂_W
+  let MW : Rep k G := Mamb.subrepresentation W hW_stable
+  haveI : FiniteDimensional k MW := inferInstanceAs (FiniteDimensional k ↥W)
+  -- Wrap q₁, q₂ as `Rep`-morphisms on MW.
+  let Q₁ : MW ⟶ MW :=
+    { hom := ModuleCat.ofHom q₁
+      comm := fun g => ModuleCat.hom_ext <| LinearMap.ext fun w => by
+        apply Subtype.ext
+        change p₁ (σ g (w : R)) = σ g (p₁ (w : R))
+        exact hp₁_equiv g w }
+  let Q₂ : MW ⟶ MW :=
+    { hom := ModuleCat.ofHom q₂
+      comm := fun g => ModuleCat.hom_ext <| LinearMap.ext fun w => by
+        apply Subtype.ext
+        change p₂ (σ g (w : R)) = σ g (p₂ (w : R))
+        exact hp₂_equiv g w }
+  -- Both are projections onto MW.ρ.invariants.
+  have hQ₁_proj : LinearMap.IsProj MW.ρ.invariants q₁ := by
+    refine ⟨fun w => ?_, fun w hw => ?_⟩
+    · rw [Representation.mem_invariants]
+      intro g
+      apply Subtype.ext
+      change σ g (p₁ (w : R)) = p₁ (w : R)
+      exact ((σ.mem_invariants _).mp (h₁.map_mem (w : R))) g
+    · apply Subtype.ext
+      change p₁ (w : R) = (w : R)
+      apply h₁.map_id
+      rw [Representation.mem_invariants]
+      intro g
+      have hgw : MW.ρ g w = w := ((MW.ρ.mem_invariants w).mp hw) g
+      have := congr_arg Subtype.val hgw
+      change σ g (w : R) = (w : R) at this
+      exact this
+  have hQ₂_proj : LinearMap.IsProj MW.ρ.invariants q₂ := by
+    refine ⟨fun w => ?_, fun w hw => ?_⟩
+    · rw [Representation.mem_invariants]
+      intro g
+      apply Subtype.ext
+      change σ g (p₂ (w : R)) = p₂ (w : R)
+      exact ((σ.mem_invariants _).mp (h₂.map_mem (w : R))) g
+    · apply Subtype.ext
+      change p₂ (w : R) = (w : R)
+      apply h₂.map_id
+      rw [Representation.mem_invariants]
+      intro g
+      have hgw : MW.ρ g w = w := ((MW.ρ.mem_invariants w).mp hw) g
+      have := congr_arg Subtype.val hgw
+      change σ g (w : R) = (w : R) at this
+      exact this
+  -- Apply the f.d. uniqueness theorem on MW.
+  have hQ_eq : Q₁ = Q₂ :=
+    IsLinearlyReductive.reynolds_unique (k := k) (G := G) hlr MW Q₁ Q₂ hQ₁_proj hQ₂_proj
+  -- Read off equality at ⟨r, hr_W⟩.
+  have h_at_r : q₁ ⟨r, hr_W⟩ = q₂ ⟨r, hr_W⟩ := by
+    have := congr_arg (fun (P : MW ⟶ MW) => P.hom.hom ⟨r, hr_W⟩) hQ_eq
+    exact this
+  exact congr_arg Subtype.val h_at_r
+
+/-- **Reynolds is `R^G`-linear on the right.**
+
+For a linearly reductive group `G` acting on a `k`-algebra `R` by ring automorphisms
+(`MulSemiringAction G R`) with locally finite action, there exists a Reynolds projection
+`π` onto the invariants that is *also* `R^G`-linear: `π(a · r) = a · π(r)` whenever
+`a ∈ R^G`. This is the key Reynolds property used in Hilbert's finiteness for GIT.
+
+Proof: define the difference `δ : R →ₗ[k] R, δ r = π(a*r) - a*π(r)`. We show `δ + π`
+is another Rep-projection onto invariants, hence equals `π` by
+`reynolds_unique_locallyFinite`, so `δ = 0`. -/
+theorem exists_reynolds_mul_compat_of_locallyFinite
+    (hlr : IsLinearlyReductive k G)
+    (R : Type u) [CommRing R] [Algebra k R]
+    [MulSemiringAction G R] [SMulCommClass G k R]
+    (hlf : Representation.IsLocallyFinite k G R) :
+    ∃ π : Rep.of (Representation.ofDistribMulAction k G R) ⟶
+            Rep.of (Representation.ofDistribMulAction k G R),
+      LinearMap.IsProj (Representation.ofDistribMulAction k G R).invariants π.hom.hom ∧
+      ∀ {a : R}, a ∈ (Representation.ofDistribMulAction k G R).invariants →
+        ∀ r : R, π.hom.hom (a * r) = a * π.hom.hom r := by
+  obtain ⟨πR, hπR⟩ := exists_reynolds_of_locallyFinite (k := k) (G := G) hlr R hlf
+  refine ⟨πR, hπR, ?_⟩
+  intro a ha r
+  -- Local notation: σ for the representation, π_lin for the underlying linear map.
+  let σ : Representation k G R := Representation.ofDistribMulAction k G R
+  let π_lin : R →ₗ[k] R := πR.hom.hom
+  -- `a` is invariant: g • a = a for all g.
+  have ha_g : ∀ g : G, g • a = a := fun g =>
+    (Representation.mem_invariants σ a).mp ha g
+  -- Multiplication by `a` is `G`-equivariant.
+  have h_a_equiv : ∀ (g : G) (s : R), g • (a * s) = a * (g • s) := fun g s => by
+    rw [smul_mul', ha_g g]
+  -- π is `G`-equivariant.
+  have hπ_equiv : ∀ (g : G) (s : R), π_lin (g • s) = g • (π_lin s) := fun g s => by
+    have := Rep.hom_comm_apply πR g s
+    exact this
+  -- Build leftMul_a : R →ₗ[k] R.
+  let leftMul_a : R →ₗ[k] R :=
+    { toFun := fun s => a * s
+      map_add' := fun x y => mul_add a x y
+      map_smul' := fun c s => by
+        simp only [RingHom.id_apply]
+        exact mul_smul_comm c a s }
+  -- φ₁ r = π(a * r), φ₂ r = a * π(r), δ := φ₁ - φ₂.
+  let φ₁ : R →ₗ[k] R := π_lin.comp leftMul_a
+  let φ₂ : R →ₗ[k] R := leftMul_a.comp π_lin
+  let δ : R →ₗ[k] R := φ₁ - φ₂
+  -- δ is G-equivariant.
+  have hδ_equiv : ∀ (g : G) (s : R), δ (g • s) = g • (δ s) := by
+    intro g s
+    have hφ₁ : φ₁ (g • s) = g • (φ₁ s) := by
+      change π_lin (a * (g • s)) = g • (π_lin (a * s))
+      rw [← h_a_equiv g s, hπ_equiv]
+    have hφ₂ : φ₂ (g • s) = g • (φ₂ s) := by
+      change a * π_lin (g • s) = g • (a * π_lin s)
+      rw [hπ_equiv, h_a_equiv]
+    change φ₁ (g • s) - φ₂ (g • s) = g • (φ₁ s - φ₂ s)
+    rw [hφ₁, hφ₂, smul_sub]
+  -- δ lands in invariants.
+  have hπ_mem : ∀ s, π_lin s ∈ σ.invariants := fun s => by
+    change πR.hom.hom s ∈ (Representation.ofDistribMulAction k G R).invariants
+    exact hπR.map_mem s
+  have hδ_inv : ∀ s, δ s ∈ σ.invariants := by
+    intro s
+    have hφ₁_inv : φ₁ s ∈ σ.invariants := by
+      change π_lin (a * s) ∈ σ.invariants
+      exact hπ_mem (a * s)
+    have hφ₂_inv : φ₂ s ∈ σ.invariants := by
+      change a * π_lin s ∈ σ.invariants
+      rw [Representation.mem_invariants]
+      intro g
+      change g • (a * π_lin s) = a * π_lin s
+      have hπ_inv : g • (π_lin s) = π_lin s :=
+        (Representation.mem_invariants σ (π_lin s)).mp (hπ_mem s) g
+      rw [smul_mul', ha_g g, hπ_inv]
+    change φ₁ s - φ₂ s ∈ σ.invariants
+    exact Submodule.sub_mem _ hφ₁_inv hφ₂_inv
+  -- δ vanishes on invariants.
+  have hδ_van : ∀ s ∈ σ.invariants, δ s = 0 := by
+    intro s hs
+    have hs_g : ∀ g : G, g • s = s := fun g =>
+      (Representation.mem_invariants σ s).mp hs g
+    have h_as_inv : a * s ∈ σ.invariants := by
+      rw [Representation.mem_invariants]
+      intro g
+      change g • (a * s) = a * s
+      rw [smul_mul', ha_g g, hs_g g]
+    have hφ₁_s : φ₁ s = a * s :=
+      hπR.map_id (a * s) h_as_inv
+    have hφ₂_s : φ₂ s = a * s := by
+      change a * π_lin s = a * s
+      rw [hπR.map_id s hs]
+    change φ₁ s - φ₂ s = 0
+    rw [hφ₁_s, hφ₂_s, sub_self]
+  -- Build π_lin' := δ + π_lin.
+  let π_lin' : R →ₗ[k] R := δ + π_lin
+  have hπ'_id : ∀ s ∈ σ.invariants, π_lin' s = s := by
+    intro s hs
+    change δ s + π_lin s = s
+    rw [hδ_van s hs, zero_add, hπR.map_id s hs]
+  have hπ'_mem : ∀ s, π_lin' s ∈ σ.invariants := by
+    intro s
+    change δ s + π_lin s ∈ σ.invariants
+    exact Submodule.add_mem _ (hδ_inv s) (hπ_mem s)
+  have hπ'_equiv : ∀ (g : G) (s : R), π_lin' (g • s) = g • (π_lin' s) := by
+    intro g s
+    change δ (g • s) + π_lin (g • s) = g • (δ s + π_lin s)
+    rw [hδ_equiv, hπ_equiv, smul_add]
+  -- Wrap π_lin' as a Rep morphism.
+  let π' : Rep.of σ ⟶ Rep.of σ :=
+    { hom := ModuleCat.ofHom π_lin'
+      comm := fun g => ModuleCat.hom_ext <| LinearMap.ext fun s => by
+        change π_lin' ((Rep.of σ).ρ g s) = (Rep.of σ).ρ g (π_lin' s)
+        exact hπ'_equiv g s }
+  have hπ'_proj : LinearMap.IsProj σ.invariants π_lin' :=
+    ⟨hπ'_mem, hπ'_id⟩
+  -- Uniqueness in the locally-finite setting.
+  have h_eq : π' = πR :=
+    IsLinearlyReductive.reynolds_unique_locallyFinite
+      (k := k) (G := G) hlr R hlf π' πR hπ'_proj hπR
+  have h_lin_eq : π_lin' = π_lin := by
+    have h := congrArg (fun (μ : Rep.of σ ⟶ Rep.of σ) => μ.hom.hom) h_eq
+    exact h
+  -- δ = 0.
+  have hδ_zero : δ = 0 := by
+    have h_add : δ + π_lin = π_lin := h_lin_eq
+    have : δ = 0 := by
+      have := add_right_cancel (a := δ) (b := π_lin) (c := 0)
+      apply this
+      rw [zero_add]; exact h_add
+    exact this
+  -- Conclude: π(a*r) = a*π(r).
+  have hδ_r : δ r = 0 := by rw [hδ_zero]; rfl
+  have h_sub : φ₁ r - φ₂ r = 0 := hδ_r
+  change π_lin (a * r) = a * π_lin r
+  exact sub_eq_zero.mp h_sub
+
 end GeneralReynolds
