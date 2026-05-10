@@ -1,4 +1,4 @@
-# `part1-5.lean` — overview
+# `part1-7.lean` — overview
 
 Plain-language summary of what each section proves. For precise hypotheses and statements, see the Lean file.
 
