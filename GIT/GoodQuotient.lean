@@ -27,7 +27,8 @@ i.e. `φ (g • x) = φ x` for all `g : G` and `x : X`.
 This is factored out so that the proof that `φ` is `G`-invariant for a
 specific `φ` can be written outside the `IsGoodQuotient` structure. -/
 def IsGInvariant (G : Type u) [Group G] (X Y : Scheme.{u})
-    [MulAction G X.carrier] (φ : X ⟶ Y) : Prop := sorry
+    [MulAction G X.carrier] (φ : X ⟶ Y) : Prop :=
+  ∀ (g : G) (x : X.carrier), φ.base (g • x) = φ.base x
 
 /-- Helper for condition (3) of the good-quotient definition.
 
@@ -41,9 +42,11 @@ def IsAffineSheafIso
     (G : Type u) [Group G]
     (X Y : Scheme.{u})
     [MulAction G X.carrier]
-    (φ : X ⟶ Y) : Prop :=
+    (φ : X ⟶ Y)
+    (ρ : ∀ U : Y.Opens, MulAction G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)) : Prop :=
   ∀ (U : Y.Opens), IsAffineOpen U →
-  (sorry : Prop)
+    Function.Injective (φ.app U).hom ∧
+    Set.range (φ.app U).hom = MulAction.fixedPoints G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)
 
 /-- Helper for conditions (4) and (5) of the good-quotient definition.
 
@@ -53,7 +56,8 @@ A subset `W ⊆ X` is (closed) `G`-invariant if it is closed under the
 This is factored out so that the hypotheses of properties (4) and (5)
 can be stated and discharged outside the `IsGoodQuotient` structure. -/
 def IsClosedGInvariant (G : Type u) [Group G] (X : Scheme.{u})
-    [MulAction G X.carrier] (W : Set X.carrier) : Prop := sorry
+    [MulAction G X.carrier] (W : Set X.carrier) : Prop :=
+  ∀ (g : G) ⦃w : X.carrier⦄, w ∈ W → g • w ∈ W
 
 
 /-- **Definition: Good Quotient.**
@@ -61,30 +65,31 @@ def IsClosedGInvariant (G : Type u) [Group G] (X : Scheme.{u})
 For the action of an affine algebraic group `G` on a variety `X`, a morphism
 `φ : X → Y` is a *good quotient* if:
 
-1. `φ` is affine and `G`-invariant;            [TODO: `IsGInvariant` still `sorry`]
+1. `φ` is affine and `G`-invariant;            [DONE]
 2. `φ` is surjective;                          [DONE]
 3. for every open affine `U ⊆ Y`, the pullback `φ* : Γ(U) → Γ(φ⁻¹(U))^G`
-   is an isomorphism;                          [TODO]
+   is an isomorphism;                          [DONE]
 4. the image of any closed `G`-invariant subset of `X` is closed in `Y`;
-                                               [DONE (modulo `IsClosedGInvariant`)]
+                                               [DONE]
 5. disjoint closed `G`-invariant subsets of `X` have disjoint images in `Y`.
-                                               [DONE (modulo `IsClosedGInvariant`)]
+                                               [DONE]
 -/
 structure IsGoodQuotient
     (k : Type u) [Field k]
     (G : Type u) [Group G]
     (X Y : Scheme.{u})
     [MulAction G X.carrier]
-    (φ : X ⟶ Y) : Prop where
+    (φ : X ⟶ Y)
+    (ρ : ∀ U : Y.Opens, MulAction G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)) : Prop where
   /-- (1a) `φ` is an affine morphism. -/
   isAffine : AlgebraicGeometry.IsAffineHom φ
-  /-- (1b) `φ` is `G`-invariant. (TODO) -/
+  /-- (1b) `φ` is `G`-invariant. -/
   isGInvariant : IsGInvariant G X Y φ
   /-- (2) `φ` is surjective. -/
   surjective : Function.Surjective φ.base
   /-- (3) For every open affine `U ⊆ Y`, the pullback map
-      `φ* : Γ(U) → Γ(φ⁻¹(U))^G` is an isomorphism. (TODO) -/
-  pullback_iso : IsAffineSheafIso G X Y φ
+      `φ* : Γ(U) → Γ(φ⁻¹(U))^G` is an isomorphism. -/
+  pullback_iso : IsAffineSheafIso G X Y φ ρ
   /-- (4) The image of any closed `G`-invariant subset is closed. -/
   closed_image : ∀ (W : Set X.carrier),
     IsClosed W → IsClosedGInvariant G X W → IsClosed (φ.base '' W)
