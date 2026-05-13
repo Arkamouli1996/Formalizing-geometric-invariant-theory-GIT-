@@ -506,27 +506,23 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
     rcases
         (Finsupp.mem_span_iff_linearCombination (R := R) (M := R) (s := (T : Set R)) y).1 hy_span'
       with ⟨l, hl⟩
-
     -- Choose a positive degree for each generator `t ∈ T`.
-    choose degT hdegTpos hdegTmem using (fun t : (T : Set R) => (hT t.1 (by simpa using t.2)))
-
+    choose degT hdegTpos hdegTmem
+      using (fun t : (T : Set R) => (hT t.1 (by simp [Finset.mem_coe.mp t.2])))
     -- Let `π_d : R →+ R` be the degree-`d` projection `z ↦ (decompose z d : R)`.
     let πd : R →+ R :=
       { toFun := fun z => ((DirectSum.decompose 𝒜 z) d : R)
         map_zero' := by simp
         map_add' := by simp }
-
     -- Since `y ∈ 𝒜 d`, `π_d y = y`.
     have hπy : πd y = y := by
       simpa [πd] using (DirectSum.decompose_of_mem_same 𝒜 (x := y) (i := d) hy)
-
     -- Expand the span expression `hl` as a concrete finset sum in `R`.
     have hl_sum :
         (Finsupp.linearCombination R (fun t : (T : Set R) => (t : R)) l) =
           Finset.sum l.support (fun t => l t * (t : R)) := by
       classical
       simp [Finsupp.linearCombination_apply, smul_eq_mul, Finsupp.sum]
-
     -- Apply `πd` to `hl` and rewrite the RHS as a sum of `πd` applied to each summand.
     have hproj :
         y = Finset.sum l.support (fun t => πd (l t * (t : R))) := by
@@ -541,7 +537,6 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
       have h3 : Finset.sum l.support (fun t => πd (l t * (t : R))) = y := by
         simpa [hπy] using h2
       exact h3.symm
-
     -- Each summand `πd (l t * t)` lies in the adjoin,
     -- hence their sum (and thus `y`) lies in the adjoin.
     have hsum_mem :
@@ -783,13 +778,16 @@ theorem RGplusA_fg_of_reynolds
 
 end RGplus_generators_S5
 
-/-first define a finite action using -/
+-- /-first define a finite action using -/
 
-/-Step 5.5: Show that R has a reynold operator using our existence proof
-  - since we have a linearly reductive group G acting acting on
-  a finitely generated k-algebra R by a locally finite action,
-  R must have a Reynolds operator
--/
+-- /-Step 5.5: Show that R has a reynold operator using our existence proof
+--   - since we have a linearly reductive group G acting acting on
+--   a finitely generated k-algebra R by a locally finite action,
+--   R must have a Reynolds operator
+-- -/
+-- theorem reynolds_operator_exists
+--     ()
+--   extract exists_reynolds_of_locallyFinite
 
 section ReynoldsRewrite_S6
 
@@ -1057,8 +1055,7 @@ theorem GIT_finiteType_invariants
     FiniteType k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) := by
   classical
   -- Step 5.5: Reynolds projection `π : R → R` (lands in `σ.invariants`).
-  obtain ⟨π, hπ⟩ :=
-    reynolds_operator_exists (k := k) (G := G) (R := R) hlr hlf
+  obtain ⟨π, hπ⟩ := reynolds_operator_exists (k := k) (G := G) hlr R hlf
   -- Step 7 reduction: it suffices to show the irrelevant ideal of `R^G` is f.g.
   refine fixedSubalgebra_finiteType (k := k)
     (A := FixedSubalgebra (k := k) (G := G) (R := R) ρ) (𝒜G := 𝒜G) ?_
