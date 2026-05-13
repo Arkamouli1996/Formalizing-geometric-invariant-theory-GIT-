@@ -720,7 +720,6 @@ variable {A : Type*} [CommRing A] [Algebra k A] [DecidableEq A]
 
 variable {R : Type*} [CommRing R] [Algebra k R]
 
-variable [Algebra A R] [IsScalarTower k A R]
 variable {toR : A →ₐ[k] R}
 variable {ρ : R →ₗ[k] A}
 
