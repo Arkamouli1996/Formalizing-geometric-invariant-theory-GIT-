@@ -131,3 +131,149 @@ theorem goodQuotient_closed_image
 -- still need proposition 8.1.3 (2)
 
 end Prop813
+
+/- ------------------------------------------------------------------ -/
+/- Spec A → Spec A^G is a good quotient -/
+
+namespace SpecInvariantsGoodQuotient
+
+open GIT
+open AlgebraicGeometry CategoryTheory
+
+variable {k : Type u} [Field k]
+variable {G : Type u} [Group G]
+
+/-
+  `A` is the coordinate ring.
+  `AG` is standing for the invariant ring `A^G`.
+
+  In the final version, `AG` should be replaced by the actual invariant
+  subring/ring of invariant functions.
+
+  `SpecA` is the G-scheme `Spec A`.
+  `SpecAG` is the scheme `Spec A^G`.
+  `π` is the canonical morphism
+
+      Spec A → Spec A^G.
+
+  Since `SpecAG` has trivial G-action, the morphism is typed as
+
+      SpecA ⟶ Action.trivial _ _ SpecAG.
+-/
+
+variable (A AG : Type u)
+variable [CommRing A] [Algebra k A]
+variable [CommRing AG] [Algebra k AG]
+
+variable (SpecA : Action Scheme.{u} (MonCat.of G))
+variable (SpecAG : Scheme.{u})
+
+variable (π : SpecA ⟶ Action.trivial _ _ SpecAG)
+
+variable
+  (ρ : ∀ U : SpecAG.Opens,
+    MulAction G (SpecA.V.presheaf.obj ⟨π.hom ⁻¹ᵁ U⟩))
+
+/-- Condition (1): the canonical morphism `Spec A → Spec A^G` is affine.
+
+Mathematically this is because it is induced by the ring map `A^G → A`,
+and morphisms between affine schemes are affine. -/
+theorem spec_to_spec_invariants_isAffine :
+    AlgebraicGeometry.IsAffineHom π.hom := by
+  sorry
+
+/-- Condition (2): the canonical morphism `Spec A → Spec A^G` is surjective.
+
+Mathematically this uses the Reynolds operator. For every prime ideal
+`𝔮 ⊂ A^G`, one proves that `𝔮A ≠ A`, then obtains a prime ideal of `A`
+lying over `𝔮`. -/
+theorem spec_to_spec_invariants_surjective :
+    Function.Surjective π.hom.base := by
+  sorry
+
+/-- Condition (3): affine-open sections pull back to invariant sections.
+
+For affine open `U ⊆ Spec A^G`, the pullback map
+
+`Γ(U, 𝒪_{Spec A^G}) → Γ(π⁻¹ U, 𝒪_{Spec A})^G`
+
+is an isomorphism.
+
+For principal opens this is the statement
+
+`(A^G)_f ≅ (A_f)^G`
+
+for invariant `f`. -/
+theorem spec_to_spec_invariants_pullback_iso :
+    IsAffineSheafIso G SpecA SpecAG π ρ := by
+  sorry
+
+/-- Condition (4): the image of every closed `G`-invariant subset is closed.
+
+Mathematically, if `W = V(I)` with `I` a `G`-stable ideal, then
+
+`π(W) = V(I ∩ A^G)`,
+
+so the image is closed in `Spec A^G`. -/
+theorem spec_to_spec_invariants_closed_image :
+    ∀ (W : Set SpecA.V.carrier),
+      IsClosed W →
+      IsClosedGInvariant G SpecA W →
+      IsClosed (π.hom.base '' W) := by
+  intro W hW_closed hW_inv
+  sorry
+
+/-- Condition (5): disjoint closed `G`-invariant subsets have disjoint images.
+
+Mathematically, if `W₁ = V(I₁)` and `W₂ = V(I₂)` are disjoint, then
+`1 ∈ I₁ + I₂`. Applying the Reynolds operator gives
+
+`1 ∈ (I₁ ∩ A^G) + (I₂ ∩ A^G)`,
+
+so their images in `Spec A^G` are disjoint. -/
+theorem spec_to_spec_invariants_separates_disjoint :
+    ∀ (W₁ W₂ : Set SpecA.V.carrier),
+      IsClosed W₁ → IsClosedGInvariant G SpecA W₁ →
+      IsClosed W₂ → IsClosedGInvariant G SpecA W₂ →
+      Disjoint W₁ W₂ →
+      Disjoint (π.hom.base '' W₁) (π.hom.base '' W₂) := by
+  intro W₁ W₂ hW₁_closed hW₁_inv hW₂_closed hW₂_inv hdisj
+  sorry
+
+/-- **Main theorem.**
+
+The canonical morphism
+
+`π : Spec A → Spec A^G`
+
+is a good quotient. -/
+theorem spec_to_spec_invariants_isGoodQuotient :
+    IsGoodQuotient k G SpecA SpecAG π ρ := by
+  refine
+    { isAffine := ?isAffine
+      surjective := ?surjective
+      pullback_iso := ?pullback_iso
+      closed_image := ?closed_image
+      separates_disjoint := ?separates_disjoint }
+  · exact spec_to_spec_invariants_isAffine
+      (A := A) (AG := AG)
+      (SpecA := SpecA) (SpecAG := SpecAG)
+      (π := π)
+  · exact spec_to_spec_invariants_surjective
+      (A := A) (AG := AG)
+      (SpecA := SpecA) (SpecAG := SpecAG)
+      (π := π)
+  · exact spec_to_spec_invariants_pullback_iso
+      (A := A) (AG := AG)
+      (SpecA := SpecA) (SpecAG := SpecAG)
+      (π := π) (ρ := ρ)
+  · exact spec_to_spec_invariants_closed_image
+      (A := A) (AG := AG)
+      (SpecA := SpecA) (SpecAG := SpecAG)
+      (π := π)
+  · exact spec_to_spec_invariants_separates_disjoint
+      (A := A) (AG := AG)
+      (SpecA := SpecA) (SpecAG := SpecAG)
+      (π := π)
+
+end SpecInvariantsGoodQuotient
