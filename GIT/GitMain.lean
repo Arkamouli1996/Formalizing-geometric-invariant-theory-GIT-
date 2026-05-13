@@ -790,9 +790,6 @@ end RGplus_generators_S5
   a finitely generated k-algebra R by a locally finite action,
   R must have a Reynolds operator
 -/
-theorem reynolds_operator_exists
-    ()
-  extract exists_reynolds_of_locallyFinite
 
 section ReynoldsRewrite_S6
 
@@ -1060,7 +1057,8 @@ theorem GIT_finiteType_invariants
     FiniteType k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) := by
   classical
   -- Step 5.5: Reynolds projection `π : R → R` (lands in `σ.invariants`).
-  obtain ⟨π, hπ⟩ := reynolds_operator_exists (k := k) (G := G) hlr R hlf
+  obtain ⟨π, hπ⟩ :=
+    reynolds_operator_exists (k := k) (G := G) (R := R) hlr hlf
   -- Step 7 reduction: it suffices to show the irrelevant ideal of `R^G` is f.g.
   refine fixedSubalgebra_finiteType (k := k)
     (A := FixedSubalgebra (k := k) (G := G) (R := R) ρ) (𝒜G := 𝒜G) ?_
