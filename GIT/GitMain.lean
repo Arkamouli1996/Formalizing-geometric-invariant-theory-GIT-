@@ -1055,7 +1055,8 @@ theorem GIT_finiteType_invariants
     FiniteType k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) := by
   classical
   -- Step 5.5: Reynolds projection `π : R → R` (lands in `σ.invariants`).
-  obtain ⟨π, hπ⟩ := reynolds_operator_exists (k := k) (G := G) hlr R hlf
+  obtain ⟨π, hπ⟩ :=
+    reynolds_operator_exists (k := k) (G := G) (R := R) hlr hlf
   -- Step 7 reduction: it suffices to show the irrelevant ideal of `R^G` is f.g.
   refine fixedSubalgebra_finiteType (k := k)
     (A := FixedSubalgebra (k := k) (G := G) (R := R) ρ) (𝒜G := 𝒜G) ?_
