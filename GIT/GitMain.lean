@@ -782,6 +782,35 @@ theorem fixedSubalgebra_finiteType
 
 end FixedSubalgebra_FiniteType_S7
 
+/-- If `toR : A →ₐ[k] R` is grading-preserving (sends `𝒜G d` into `𝒜 d`),
+then taking the degree-`0` component commutes with `toR`. -/
+lemma AlgHom.map_decompose_zero
+    {k : Type u} [Field k]
+    {A : Type*} [CommRing A] [Algebra k A]
+    {R : Type*} [CommRing R] [Algebra k R]
+    (toR : A →ₐ[k] R)
+    (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
+    (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
+    (htoR : ∀ (d : ℕ) (a : A), a ∈ 𝒜G d → toR a ∈ 𝒜 d) (a : A) :
+    toR ((DirectSum.decompose 𝒜G a) 0 : A) =
+      ((DirectSum.decompose 𝒜 (toR a)) 0 : R) := by
+  refine DirectSum.Decomposition.inductionOn (ℳ := 𝒜G)
+    (motive := fun a => toR ((DirectSum.decompose 𝒜G a) 0 : A) =
+      ((DirectSum.decompose 𝒜 (toR a)) 0 : R)) (by simp) ?_ ?_ a
+  · rintro i ⟨c, hc⟩
+    change toR ((DirectSum.decompose 𝒜G (c : A)) 0 : A) =
+        ((DirectSum.decompose 𝒜 (toR (c : A))) 0 : R)
+    by_cases hi : i = 0
+    · subst hi
+      rw [DirectSum.decompose_of_mem_same 𝒜G hc,
+          DirectSum.decompose_of_mem_same 𝒜 (htoR 0 c hc)]
+    · rw [DirectSum.decompose_of_mem_ne 𝒜G hc hi,
+          DirectSum.decompose_of_mem_ne 𝒜 (htoR i c hc) hi]
+      simp
+  · intro x y hx hy
+    simp only [DirectSum.decompose_add, DirectSum.add_apply, AddMemClass.coe_add,
+      map_add, hx, hy]
+
 /-!
 ## Main GIT theorem (Hilbert finiteness)
 
@@ -878,29 +907,8 @@ theorem GIT_finiteType_invariants
   -- to `(decompose 𝒜 (toR a)) 0`. Proved by induction on the graded decomposition.
   have hdecomp0 : ∀ a : A,
       (((DirectSum.decompose 𝒜G a) 0 : A) : R) =
-        ((DirectSum.decompose 𝒜 (toR a)) 0 : R) := fun a => by
-    refine DirectSum.Decomposition.inductionOn (ℳ := 𝒜G)
-      (motive := fun a => (((DirectSum.decompose 𝒜G a) 0 : A) : R) =
-        ((DirectSum.decompose 𝒜 (toR a)) 0 : R)) ?_ ?_ ?_ a
-    · simp
-    · intro i m
-      obtain ⟨c, hc⟩ := m
-      have hcR : (c : R) ∈ 𝒜 i := h𝒜G i c hc
-      change (((DirectSum.decompose 𝒜G (c : A)) 0 : A) : R) =
-        ((DirectSum.decompose 𝒜 (c : R)) 0 : R)
-      by_cases hi : i = 0
-      · subst hi
-        rw [DirectSum.decompose_of_mem_same 𝒜G hc,
-            DirectSum.decompose_of_mem_same 𝒜 hcR]
-      · rw [DirectSum.decompose_of_mem_ne 𝒜G hc hi,
-            DirectSum.decompose_of_mem_ne 𝒜 hcR hi]
-        simp
-    · intro x y hx hy
-      rw [DirectSum.decompose_add, DirectSum.add_apply,
-          AddMemClass.coe_add, map_add, DirectSum.decompose_add, DirectSum.add_apply,
-          AddMemClass.coe_add]
-      push_cast
-      rw [hx, hy]
+        ((DirectSum.decompose 𝒜 (toR a)) 0 : R) :=
+    AlgHom.map_decompose_zero toR 𝒜G 𝒜 h𝒜G
   -- Each `a ∈ irrelevant 𝒜G` has `toR a ∈ irrelevant 𝒜` in `R`.
   have h_ext_le_irrR : extendedRGplus ≤ (HomogeneousIdeal.irrelevant 𝒜).toIdeal := by
     refine Ideal.map_le_iff_le_comap.mpr ?_
