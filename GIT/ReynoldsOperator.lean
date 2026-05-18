@@ -74,32 +74,6 @@ theorem Representation.isLocallyFinite_of_finite (k : Type*) [CommSemiring k] (G
 
 end LocallyFinite
 
-section ReynoldsOperator
-
-/- reynolds operator on finite group -/
-variable (k : Type*) [CommSemiring k] (G : Type*) [Group G] [Fintype G]
-    [Invertible (Fintype.card G : k)]
-    (R : Type*) [AddCommMonoid R] [Module k R] [DistribMulAction G R] [SMulCommClass G k R]
-
-/-- Def2: The Reynolds operator for a finite group `G` acting on a `k`-module `R`.
-This is the `k`-linear projection `R →ₗ[k] R` onto the submodule of `G`-invariants,
-defined as `(1/|G|) ∑ g, ρ(g)`. -/
-noncomputable def reynoldsOperator : R →ₗ[k] R :=
-  (Representation.ofDistribMulAction k G R).averageMap
-
-/-- The Reynolds operator maps every element into the submodule of `G`-invariants. -/
-theorem reynoldsOperator_mem_invariants (r : R) :
-    reynoldsOperator k G R r ∈ (Representation.ofDistribMulAction k G R).invariants :=
-  (Representation.ofDistribMulAction k G R).averageMap_invariant r
-
-/-- The Reynolds operator fixes every `G`-invariant element. -/
-theorem reynoldsOperator_id (r : R)
-    (hr : r ∈ (Representation.ofDistribMulAction k G R).invariants) :
-    reynoldsOperator k G R r = r :=
-  (Representation.ofDistribMulAction k G R).averageMap_id r hr
-
-end ReynoldsOperator
-
 section GeneralReynolds
 
 /-- Def3: A group `G` is linearly reductive over `k` if every finite-dimensional representation

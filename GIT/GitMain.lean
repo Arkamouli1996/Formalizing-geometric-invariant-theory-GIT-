@@ -14,7 +14,7 @@ universe u v w uR
 
 section GradedCheck_S1
 
--- Step 0: Basic objects
+-- Basic objects
 
 variable (k : Type u) [Field k]
 variable (G : Type v) [Group G]
@@ -22,221 +22,146 @@ variable (ι : Type w) [DecidableEq ι] [AddMonoid ι]
 variable (R : Type*) [Semiring R] [Algebra k R]
 variable (𝒜 : ι → Submodule k R)
 
--- Step 4: Assume R is already graded
+-- Grading on R
 
 variable [GradedAlgebra 𝒜]
 
--- Step 5: Encode the action by algebra automorphisms
+-- Group action by ring/algebra automorphisms via a `MulSemiringAction`.
+-- `MulSemiringAction G R` extends `DistribMulAction` and bundles `smul_one`, `smul_mul`;
+-- combined with `SMulCommClass G k R` it captures exactly "action by `k`-algebra automorphisms".
 
-variable (ρ : G →* R ≃ₐ[k] R)
+variable [MulSemiringAction G R] [SMulCommClass G k R]
 
--- Step 6: Define the missing condition: the action preserves the grading
+-- The grading-preservation hypothesis
 
 def PreservesGrading : Prop :=
-  ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → (ρ g : R → R) r ∈ 𝒜 d
+  ∀ (g : G) (d : ι) {r : R}, r ∈ 𝒜 d → g • r ∈ 𝒜 d
 
-#check PreservesGrading
+-- The invariant subalgebra R^G
 
--- Step 7: Define the invariant subalgebra R^G
+def FixedSubalgebra : Subalgebra k R where
+  carrier := { r : R | ∀ g : G, g • r = r }
+  zero_mem' g := smul_zero g
+  one_mem' g := smul_one g
+  add_mem' hx hy g := by simp [smul_add, hx g, hy g]
+  mul_mem' hx hy g := by simp [smul_mul', hx g, hy g]
+  algebraMap_mem' a g := smul_algebraMap g a
 
-def FixedSubalgebra (ρ : G →* R ≃ₐ[k] R) : Subalgebra k R :=
-{
-  carrier := { r : R | ∀ g : G, (ρ g) r = r }
-
-  zero_mem' := by
-    intro g
-    simp
-
-  one_mem' := by
-    intro g
-    simp
-
-  add_mem' := by
-    intro x y hx hy g
-    simp [map_add, hx g, hy g]
-
-  mul_mem' := by
-    intro x y hx hy g
-    simp [map_mul, hx g, hy g]
-
-  algebraMap_mem' := by
-    intro a g
-    exact (ρ g).commutes a
-}
-
--- Step 8a: Define the degree-d piece inside ambient R
+-- Degree-d piece in ambient R
 
 def FixedPiece (d : ι) : Submodule k R :=
-  𝒜 d ⊓ (FixedSubalgebra (k := k) (G := G) (R := R) ρ).toSubmodule
+  𝒜 d ⊓ (FixedSubalgebra k G R).toSubmodule
 
--- Step 8b: Define the degree-d piece inside R^G
+-- Degree-d piece in R^G
 
 def FixedPieceInFixedSubalgebra (d : ι) :
-    Submodule k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) :=
-{
+    Submodule k (FixedSubalgebra k G R) where
   carrier := { x | (x : R) ∈ 𝒜 d }
+  zero_mem' := Submodule.zero_mem (𝒜 d)
+  add_mem' hx hy := Submodule.add_mem (𝒜 d) hx hy
+  smul_mem' a _ hx := Submodule.smul_mem (𝒜 d) a hx
 
-  zero_mem' := by
-    change (0 : R) ∈ 𝒜 d
-    exact Submodule.zero_mem (𝒜 d)
-
-  add_mem' := by
-    intro x y hx hy
-    change ((x : R) + (y : R)) ∈ 𝒜 d
-    exact Submodule.add_mem (𝒜 d) hx hy
-
-  smul_mem' := by
-    intro a x hx
-    change (a • (x : R)) ∈ 𝒜 d
-    exact Submodule.smul_mem (𝒜 d) a hx
-}
-
--- Lemma for Step 9:
+-- Auxiliary lemma
 lemma fixed_component_mem_degree
-    (x : FixedSubalgebra (k := k) (G := G) (R := R) ρ)
-    (d : ι) :
-    ((DirectSum.decompose 𝒜 (x : R)) d : R) ∈ 𝒜 d := by
-  exact ((DirectSum.decompose 𝒜 (x : R)) d).property
+    (x : FixedSubalgebra k G R) (d : ι) :
+    ((DirectSum.decompose 𝒜 (x : R)) d : R) ∈ 𝒜 d :=
+  ((DirectSum.decompose 𝒜 (x : R)) d).property
 
 lemma proj_commutes_of_preservesGrading
-    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ))
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜))
     (g : G) (d : ι) :
-    (GradedAlgebra.proj 𝒜 d).comp (ρ g).toLinearMap =
-      (ρ g).toLinearMap.comp (GradedAlgebra.proj 𝒜 d) := by
+    (GradedAlgebra.proj 𝒜 d).comp (DistribSMul.toLinearMap k R g) =
+      (DistribSMul.toLinearMap k R g).comp (GradedAlgebra.proj 𝒜 d) := by
   refine DirectSum.decompose_lhom_ext 𝒜 (fun e => ?_)
   ext y
+  have hyρ : (DistribSMul.toLinearMap k R g) (y : R) ∈ 𝒜 e := by
+    simpa using hpres g e y.property
   by_cases h : e = d
   · subst d
-    have hyρ : (ρ g).toLinearMap (y : R) ∈ 𝒜 e := by
-      simpa using hpres g e y.property
-    change
-      ↑(((DirectSum.decompose 𝒜) ((ρ g).toLinearMap (y : R))) e)
-        =
-      (ρ g).toLinearMap
-        (↑(((DirectSum.decompose 𝒜) (y : R)) e))
-    rw [DirectSum.decompose_of_mem_same 𝒜 hyρ]
-    rw [DirectSum.decompose_of_mem_same 𝒜 y.property]
-  · have hyρ : (ρ g).toLinearMap (y : R) ∈ 𝒜 e := by
-      simpa using hpres g e y.property
-    change
-      ↑(((DirectSum.decompose 𝒜) ((ρ g).toLinearMap (y : R))) d)
-        =
-      (ρ g).toLinearMap
-        (↑(((DirectSum.decompose 𝒜) (y : R)) d))
-    rw [DirectSum.decompose_of_mem_ne 𝒜 hyρ h]
-    rw [DirectSum.decompose_of_mem_ne 𝒜 y.property h]
+    change ↑(((DirectSum.decompose 𝒜) ((DistribSMul.toLinearMap k R g) (y : R))) e) =
+        (DistribSMul.toLinearMap k R g) (↑(((DirectSum.decompose 𝒜) (y : R)) e))
+    rw [DirectSum.decompose_of_mem_same 𝒜 hyρ,
+        DirectSum.decompose_of_mem_same 𝒜 y.property]
+  · change ↑(((DirectSum.decompose 𝒜) ((DistribSMul.toLinearMap k R g) (y : R))) d) =
+        (DistribSMul.toLinearMap k R g) (↑(((DirectSum.decompose 𝒜) (y : R)) d))
+    rw [DirectSum.decompose_of_mem_ne 𝒜 hyρ h,
+        DirectSum.decompose_of_mem_ne 𝒜 y.property h]
     simp
 
 lemma fixed_component_is_fixed
-    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ))
-    (x : FixedSubalgebra (k := k) (G := G) (R := R) ρ)
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜))
+    (x : FixedSubalgebra k G R)
     (d : ι) :
     ((DirectSum.decompose 𝒜 (x : R)) d : R) ∈
-      (FixedSubalgebra (k := k) (G := G) (R := R) ρ).toSubmodule := by
+      (FixedSubalgebra k G R).toSubmodule := by
   intro g
   have hlin :
-      (GradedAlgebra.proj 𝒜 d).comp (ρ g).toLinearMap =
-        (ρ g).toLinearMap.comp (GradedAlgebra.proj 𝒜 d) :=
+      (GradedAlgebra.proj 𝒜 d).comp (DistribSMul.toLinearMap k R g) =
+        (DistribSMul.toLinearMap k R g).comp (GradedAlgebra.proj 𝒜 d) :=
     proj_commutes_of_preservesGrading
-      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
       hpres g d
   have hcomm :
-      GradedAlgebra.proj 𝒜 d ((ρ g).toLinearMap (x : R)) =
-        (ρ g).toLinearMap (GradedAlgebra.proj 𝒜 d (x : R)) := by
+      GradedAlgebra.proj 𝒜 d ((DistribSMul.toLinearMap k R g) (x : R)) =
+        (DistribSMul.toLinearMap k R g) (GradedAlgebra.proj 𝒜 d (x : R)) := by
     simpa [LinearMap.comp_apply] using
       congrArg (fun F : R →ₗ[k] R => F (x : R)) hlin
-  have hxfix : (ρ g).toLinearMap (x : R) = (x : R) := by
+  have hxfix : (DistribSMul.toLinearMap k R g) (x : R) = (x : R) := by
     simpa using x.property g
   rw [hxfix] at hcomm
   simpa [GradedAlgebra.proj_apply] using hcomm.symm
 
 lemma fixed_component_mem_fixedPiece
-    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ))
-    (x : FixedSubalgebra (k := k) (G := G) (R := R) ρ)
-    (d : ι) :
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜))
+    (x : FixedSubalgebra k G R) (d : ι) :
     (⟨((DirectSum.decompose 𝒜 (x : R)) d : R),
       fixed_component_is_fixed
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
         hpres x d⟩ :
-      FixedSubalgebra (k := k) (G := G) (R := R) ρ) ∈
+      FixedSubalgebra k G R) ∈
       FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d := by
-  exact
-    fixed_component_mem_degree
-      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
-      x d
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d :=
+  fixed_component_mem_degree
+    (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
+    x d
 
--- forget map for Step 9
+-- Forget map
 def fixedPieceForget (d : ι) :
     FixedPieceInFixedSubalgebra
-      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d →+
-      𝒜 d :=
-{
-  toFun := fun x =>
-    ⟨((x : FixedSubalgebra (k := k) (G := G) (R := R) ρ) : R), x.property⟩
-
-  map_zero' := by
-    ext
-    rfl
-
-  map_add' := by
-    intro x y
-    ext
-    rfl
-}
+      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d →+ 𝒜 d where
+  toFun x := ⟨((x : FixedSubalgebra k G R) : R), x.property⟩
+  map_zero' := by ext; rfl
+  map_add' _ _ := by ext; rfl
 
 omit [DecidableEq ι] [AddMonoid ι] [GradedAlgebra 𝒜] in
 lemma fixedPieceForget_injective (d : ι) :
     Function.Injective
       (fixedPieceForget
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) := by
-  intro x y h
-  have hR :
-      (((x : FixedPieceInFixedSubalgebra
-          (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) :
-          FixedSubalgebra (k := k) (G := G) (R := R) ρ) : R)
-        =
-      (((y : FixedPieceInFixedSubalgebra
-          (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) :
-          FixedSubalgebra (k := k) (G := G) (R := R) ρ) : R) := by
-    exact congrArg
-      (fun z : 𝒜 d => (z : R))
-      h
-  apply Subtype.ext
-  apply Subtype.ext
-  exact hR
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) := fun _ _ h =>
+  Subtype.ext (Subtype.ext (congrArg (fun z : 𝒜 d => (z : R)) h))
 
 
--- Step 9: Main theorem
--- R^G = ⨁ d, (R_d ∩ R^G)
+-- Direct-sum decomposition of R^G: R^G = ⨁ d, (R_d ∩ R^G)
 
 theorem fixedSubalgebra_decomposes
-    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)) :
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)) :
     DirectSum.IsInternal
       fun d : ι =>
         FixedPieceInFixedSubalgebra
-          (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d := by
+          (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d := by
   classical
-  let B : ι → Submodule k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) :=
+  let B : ι → Submodule k (FixedSubalgebra k G R) :=
     fun d =>
       FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d
   let forget : (d : ι) → B d →+ 𝒜 d :=
     fun d =>
       fixedPieceForget
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d
-  let coeFixed :
-      FixedSubalgebra (k := k) (G := G) (R := R) ρ →+ R :=
-  {
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d
+  let coeFixed : FixedSubalgebra k G R →+ R := {
     toFun := fun x => (x : R)
-
-    map_zero' := by
-      rfl
-
-    map_add' := by
-      intro x y
-      rfl
-  }
+    map_zero' := rfl
+    map_add' := fun _ _ => rfl }
   have hcomp :
       coeFixed.comp (DirectSum.coeAddMonoidHom B)
         =
@@ -251,25 +176,18 @@ theorem fixedSubalgebra_decomposes
     have hR' :
         coeFixed ((DirectSum.coeAddMonoidHom B) a)
           =
-        coeFixed ((DirectSum.coeAddMonoidHom B) b) := by
-      exact congrArg
-        (fun z : FixedSubalgebra (k := k) (G := G) (R := R) ρ =>
-          coeFixed z)
-        h
+        coeFixed ((DirectSum.coeAddMonoidHom B) b) :=
+      congrArg (fun z : FixedSubalgebra k G R => coeFixed z) h
     have ha :
         coeFixed ((DirectSum.coeAddMonoidHom B) a)
           =
-        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) a) := by
-      exact congrArg
-        (fun F : (DirectSum ι fun d => B d) →+ R => F a)
-        hcomp
+        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) a) :=
+      congrArg (fun F : (DirectSum ι fun d => B d) →+ R => F a) hcomp
     have hb :
         coeFixed ((DirectSum.coeAddMonoidHom B) b)
           =
-        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) b) := by
-      exact congrArg
-        (fun F : (DirectSum ι fun d => B d) →+ R => F b)
-        hcomp
+        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) b) :=
+      congrArg (fun F : (DirectSum ι fun d => B d) →+ R => F b) hcomp
     have hR :
         (DirectSum.coeAddMonoidHom 𝒜)
             ((DirectSum.map forget) a)
@@ -291,7 +209,7 @@ theorem fixedSubalgebra_decomposes
       ((DirectSum.map_injective forget).2
         (fun d =>
           fixedPieceForget_injective
-            (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d))
+            (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d))
         hmap
   · -- surjective
     intro x
@@ -304,11 +222,11 @@ theorem fixedSubalgebra_decomposes
             ⟨
               ((DirectSum.decompose 𝒜 (x : R)) d.1 : R),
               fixed_component_is_fixed
-                (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+                (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
                 hpres x d.1
             ⟩,
             fixed_component_mem_degree
-              (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+              (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
               x d.1
           ⟩ : B d.1))
     refine ⟨y, ?_⟩
@@ -327,11 +245,11 @@ theorem fixedSubalgebra_decomposes
                 ⟨
                   ((DirectSum.decompose 𝒜 (x : R)) d : R),
                   fixed_component_is_fixed
-                    (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+                    (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
                     hpres x d
                 ⟩,
                 fixed_component_mem_degree
-                  (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)
+                  (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
                   x d
               ⟩ : B d) := by
           dsimp [y]
@@ -348,10 +266,8 @@ theorem fixedSubalgebra_decomposes
     have hyR :
         coeFixed ((DirectSum.coeAddMonoidHom B) y)
           =
-        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) y) := by
-      exact congrArg
-        (fun F : (DirectSum ι fun d => B d) →+ R => F y)
-        hcomp
+        (DirectSum.coeAddMonoidHom 𝒜) ((DirectSum.map forget) y) :=
+      congrArg (fun F : (DirectSum ι fun d => B d) →+ R => F y) hcomp
     calc
       coeFixed ((DirectSum.coeAddMonoidHom B) y)
           =
@@ -359,13 +275,7 @@ theorem fixedSubalgebra_decomposes
       _ =
         (DirectSum.coeAddMonoidHom 𝒜) (DirectSum.decompose 𝒜 (x : R)) := by
           rw [hy_decomp]
-      _ = (x : R) := by
-          change
-            (DirectSum.coeAddMonoidHom 𝒜)
-              (DirectSum.Decomposition.decompose' (ℳ := 𝒜) (x : R))
-              =
-            (x : R)
-          exact DirectSum.Decomposition.left_inv (ℳ := 𝒜) (x : R)
+      _ = (x : R) := DirectSum.Decomposition.left_inv (ℳ := 𝒜) (x : R)
 
 /-! ### Glue: turn `IsInternal` (Step 1) into a `GradedAlgebra` instance on `R^G`. -/
 
@@ -373,14 +283,14 @@ theorem fixedSubalgebra_decomposes
 instance fixedPieceInFixedSubalgebra_gradedOne :
     SetLike.GradedOne
       (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
   one_mem := show (1 : R) ∈ 𝒜 0 from SetLike.GradedOne.one_mem
 
 /-- Multiplication in `R^G` respects the inherited grading. -/
 instance fixedPieceInFixedSubalgebra_gradedMul :
     SetLike.GradedMul
       (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
   mul_mem := fun {i j a b} ha hb =>
     show ((a : R) * (b : R)) ∈ 𝒜 (i + j) from
       SetLike.GradedMul.mul_mem ha hb
@@ -389,20 +299,20 @@ instance fixedPieceInFixedSubalgebra_gradedMul :
 instance fixedPieceInFixedSubalgebra_gradedMonoid :
     SetLike.GradedMonoid
       (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) where
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
 
 /-- **Glue lemma (1): `R^G` carries an inherited graded-algebra structure.**
 
 Combining Step 1 (`fixedSubalgebra_decomposes`) with the `SetLike.GradedMonoid` instances
-above, the family `FixedPieceInFixedSubalgebra`q makes `R^G` a graded `k`-algebra. -/
+above, the family `FixedPieceInFixedSubalgebra` makes `R^G` a graded `k`-algebra. -/
 noncomputable def fixedSubalgebra_gradedAlgebra
-    (hpres : PreservesGrading (k := k) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ)) :
+    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)) :
     GradedAlgebra
       (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) d) :=
+        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) :=
   DirectSum.IsInternal.gradedAlgebra
     (fixedSubalgebra_decomposes
-      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) (ρ := ρ) hpres)
+      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) hpres)
 
 end GradedCheck_S1
 
@@ -443,20 +353,12 @@ lemma exists_finset_homogeneous_pos_generators
       _   = Ideal.span s := hirr
   have hfg_submodule : (Submodule.span R s).FG := by
     rcases hspan_s_fg with ⟨S, hS⟩
-    refine ⟨S, ?_⟩
-    have hS' :
-        (Ideal.span (S : Set R) : Submodule R R) = (Ideal.span s : Submodule R R) :=
-      congrArg (fun (I : Ideal R) => (I : Submodule R R)) hS
-    change (Ideal.span (S : Set R) : Submodule R R) = (Ideal.span s : Submodule R R)
-    exact hS'
+    exact ⟨S, congrArg (fun (I : Ideal R) => (I : Submodule R R)) hS⟩
   rcases (Submodule.fg_span_iff_fg_span_finset_subset (R := R) (M := R) s).1 hfg_submodule with
     ⟨T, hTs, hspan⟩
   refine ⟨T, ?_, ?_⟩
-  · have : Ideal.span s = Ideal.span (T : Set R) := by
-      have hspan' : (Submodule.span R s : Ideal R) = (Submodule.span R (T : Set R) : Ideal R) :=
-        congrArg (fun (N : Submodule R R) => (N : Ideal R)) hspan
-      change (Ideal.span s : Ideal R) = (Ideal.span (T : Set R) : Ideal R)
-      exact hspan'
+  · have : Ideal.span s = Ideal.span (T : Set R) :=
+      congrArg (fun (N : Submodule R R) => (N : Ideal R)) hspan
     calc
       Ideal.span (T : Set R) = Ideal.span s := this.symm
       _ = irrelevantIdeal (k := k) (R := R) (𝒜 := 𝒜) := hirr.symm
@@ -467,13 +369,10 @@ lemma exists_finset_homogeneous_pos_generators
     exact ⟨d, hdpos, hmem⟩
 
 noncomputable def inst_algebra_degreeZero :
-    Algebra (𝒜 0) R := by
-  classical
-  exact inferInstance
+    Algebra (𝒜 0) R := inferInstance
 
 noncomputable def inst_isScalarTower_degreeZero :
     IsScalarTower k (𝒜 0) R := by
-  classical
   letI : Algebra (𝒜 0) R := inst_algebra_degreeZero (k := k) (R := R) (𝒜 := 𝒜)
   refine IsScalarTower.of_algebraMap_eq' (R := k) (S := (𝒜 0)) (A := R) ?_
   ext x
@@ -490,14 +389,11 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
   intro d ih y hy
   by_cases hd0 : d = 0
   · subst hd0
-    have : y ∈ (Algebra.adjoin (𝒜 0) (T : Set R) : Subalgebra (𝒜 0) R) := by
-      simpa using (Subalgebra.algebraMap_mem (Algebra.adjoin (𝒜 0) (T : Set R)) ⟨y, hy⟩)
-    exact this
+    simpa using (Subalgebra.algebraMap_mem (Algebra.adjoin (𝒜 0) (T : Set R)) ⟨y, hy⟩)
   · have hdpos : 0 < d := Nat.pos_of_ne_zero hd0
     have hy_irrel : y ∈ irrelevantIdeal (k := k) (R := R) (𝒜 := 𝒜) := by
-      have : y ∈ HomogeneousIdeal.irrelevant 𝒜 := by
-        exact HomogeneousIdeal.mem_irrelevant_of_mem (𝒜 := 𝒜) (x := y) (i := d) hdpos hy
-      simpa [irrelevantIdeal] using this
+      simpa [irrelevantIdeal] using
+        HomogeneousIdeal.mem_irrelevant_of_mem (𝒜 := 𝒜) (x := y) (i := d) hdpos hy
     have hy_span : y ∈ Ideal.span (T : Set R) := by
       simpa [hspan] using hy_irrel
     have hy_span' : y ∈ (Submodule.span R (T : Set R) : Submodule R R) := by
@@ -529,9 +425,7 @@ lemma homogeneous_mem_adjoin_of_irrelevant_eq_span
       have h1 : πd (Finsupp.linearCombination R (fun t : (T : Set R) => (t : R)) l) = πd y := by
         simpa [hl] using congrArg πd hl
       have h1' : πd (Finset.sum l.support (fun t => l t * (t : R))) = πd y := by
-        have h1' := h1
-        rw [hl_sum] at h1'
-        exact h1'
+        rw [← hl_sum]; exact h1
       have h2 : Finset.sum l.support (fun t => πd (l t * (t : R))) = πd y := by
         simpa [map_sum] using h1'
       have h3 : Finset.sum l.support (fun t => πd (l t * (t : R))) = y := by
@@ -619,17 +513,12 @@ variable [IsNoetherianRing R]
 variable (extendedRGplus : Ideal R)
 
 /-- Since `R` is Noetherian, the ideal `R₊^G R` is finitely generated. -/
-theorem extendedRGplus_fg : extendedRGplus.FG := by
-  classical
-  exact IsNoetherian.noetherian extendedRGplus
+theorem extendedRGplus_fg : extendedRGplus.FG := IsNoetherian.noetherian extendedRGplus
 
 /-- Choose a finite generating set for `R₊^G R`. -/
 theorem exists_generators_extendedRGplus :
     ∃ s : Finset R, Ideal.span (↑s : Set R) = extendedRGplus := by
-  classical
-  simpa [Ideal.FG] using
-    (extendedRGplus_fg
-      (R := R) (extendedRGplus := extendedRGplus))
+  simpa [Ideal.FG] using extendedRGplus_fg (R := R) (extendedRGplus := extendedRGplus)
 
 end RGplus_finitely_generated_S3
 
@@ -654,8 +543,7 @@ theorem exists_generators_extendedRGplus_from_RGplus
   have hfg_span_ideal : (Ideal.span RGplusSet).FG := by
     simpa [hspan] using hfg
   have hfg_span_submodule :
-      (Submodule.span R RGplusSet : Submodule R R).FG := by
-    exact hfg_span_ideal
+      (Submodule.span R RGplusSet : Submodule R R).FG := hfg_span_ideal
   rcases
     (Submodule.fg_span_iff_fg_span_finset_subset
       (R := R) (M := R) RGplusSet).1 hfg_span_submodule
@@ -778,17 +666,6 @@ theorem RGplusA_fg_of_reynolds
 
 end RGplus_generators_S5
 
--- /-first define a finite action using -/
-
--- /-Step 5.5: Show that R has a reynold operator using our existence proof
---   - since we have a linearly reductive group G acting acting on
---   a finitely generated k-algebra R by a locally finite action,
---   R must have a Reynolds operator
--- -/
--- theorem reynolds_operator_exists
---     ()
---   extract exists_reynolds_of_locallyFinite
-
 section ReynoldsRewrite_S6
 
 set_option linter.unusedSectionVars false
@@ -862,9 +739,7 @@ lemma exists_finset_presentation_of_mem_span
     ∃ coeff : s → R, x = ∑ t ∈ s.attach, t.val * coeff t := by
   classical
   -- View the ideal-span hypothesis as a submodule-span hypothesis.
-  have hxsub : x ∈ (Submodule.span R (↑s : Set R) : Submodule R R) := by
-    change x ∈ ((Ideal.span (↑s : Set R) : Ideal R) : Submodule R R)
-    exact hx
+  have hxsub : x ∈ (Submodule.span R (↑s : Set R) : Submodule R R) := hx
   -- Induct on membership in the span. The motive does not depend on the
   -- membership proof, so we strip it via `fun y _ => _`.
   refine Submodule.span_induction
@@ -923,11 +798,8 @@ theorem reynoldsGITSpanProperty_of_reynolds
       f ∈ Ideal.span ((lift '' (s : Set R)) : Set A) :=
     mem_ideal_span_lift_of_reynolds k A R toR ρ s lift f coeff hcoeff hlift hρ_id hρ_mul
   -- (c) On `s`, `ρ x = lift x`.
-  have hρ_eq_lift : ∀ x ∈ s, ρ x = lift x := by
-    intro x hx
-    have hxR : ρ (toR (lift x)) = lift x := hρ_id (lift x)
-    have hxs : ρ x = ρ (toR (lift x)) := by rw [hlift x hx]
-    rw [hxs, hxR]
+  have hρ_eq_lift : ∀ x ∈ s, ρ x = lift x := fun x hx =>
+    (congrArg ρ (hlift x hx).symm).trans (hρ_id (lift x))
   -- (d) `lift '' s = (Finset.image ρ s : Set A)`.
   have hsets :
       (lift '' (s : Set R)) =
@@ -1011,19 +883,16 @@ variable (k : Type u) [Field k]
 variable (G : Type u) [Group G]
 variable (R : Type u) [CommRing R] [Algebra k R]
 
--- Action of `G` on `R` as a `DistribMulAction` (so the Reynolds machinery applies)
--- together with the bundled `k`-algebra-automorphism form `ρ` used in Step 1.
-variable [DistribMulAction G R] [SMulCommClass G k R]
-variable (ρ : G →* R ≃ₐ[k] R)
-
--- Compatibility: `ρ` is the action.
-variable (hρ_compat : ∀ (g : G) (r : R), ρ g r = g • r)
+-- Action of `G` on `R` as a `MulSemiringAction` — a single typeclass bundling both the
+-- ring-automorphism structure (needed for `FixedSubalgebra`) and the linear-action structure
+-- (needed for the Reynolds machinery via `Representation.ofDistribMulAction`).
+variable [MulSemiringAction G R] [SMulCommClass G k R]
 
 -- The grading on `R`.
 variable (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
 
 -- The induced grading on `R^G`.
-variable (𝒜G : ℕ → Submodule k (FixedSubalgebra (k := k) (G := G) (R := R) ρ))
+variable (𝒜G : ℕ → Submodule k (FixedSubalgebra k G R))
   [GradedAlgebra 𝒜G]
 
 open Algebra HomogeneousIdeal
@@ -1037,7 +906,6 @@ as a `k`-algebra.
 
 Hypotheses:
 * `hlr`     : `G` is linearly reductive over `k`.
-* `hpres`   : the action `ρ` preserves the grading `𝒜`.
 * `hlf`     : the underlying `k`-module action of `G` on `R` is locally finite.
 * `[FiniteType k R]`        : `R` is finitely generated as a `k`-algebra.
 * `[IsNoetherianRing R]`    : used in Step 3 to get `extendedRGplus.FG`.
@@ -1048,21 +916,20 @@ theorem GIT_finiteType_invariants
     [FiniteType k R]
     [IsNoetherianRing R]
     [FiniteType k (𝒜G 0)]
-    (hlr : IsLinearlyReductive k G) (hρ_compat : ∀ (g : G) (r : R), ρ g r = g • r)
+    (hlr : IsLinearlyReductive k G)
     (hlf : Representation.IsLocallyFinite k G R)
-    (h𝒜G : ∀ (d : ℕ) (a : FixedSubalgebra (k := k) (G := G) (R := R) ρ),
+    (h𝒜G : ∀ (d : ℕ) (a : FixedSubalgebra k G R),
       a ∈ 𝒜G d → (a : R) ∈ 𝒜 d) :
-    FiniteType k (FixedSubalgebra (k := k) (G := G) (R := R) ρ) := by
+    FiniteType k (FixedSubalgebra k G R) := by
   classical
-  -- Step 5.5: Reynolds projection `π : R → R` (lands in `σ.invariants`).
-  obtain ⟨π, hπ⟩ :=
-    reynolds_operator_exists (k := k) (G := G) (R := R) hlr hlf
   -- Step 7 reduction: it suffices to show the irrelevant ideal of `R^G` is f.g.
+  -- (The Reynolds projection enters later, via `exists_reynolds_mul_compat_of_locallyFinite`,
+  -- which provides the multiplicative version we actually need.)
   refine fixedSubalgebra_finiteType (k := k)
-    (A := FixedSubalgebra (k := k) (G := G) (R := R) ρ) (𝒜G := 𝒜G) ?_
+    (A := FixedSubalgebra k G R) (𝒜G := 𝒜G) ?_
   -- ── Setup ────────────────────────────────────────────────────────────────
   -- `A = R^G` as a `k`-subalgebra, plus inclusion `toR : A →ₐ[k] R`.
-  let A : Subalgebra k R := FixedSubalgebra (k := k) (G := G) (R := R) ρ
+  let A : Subalgebra k R := FixedSubalgebra k G R
   let toR : A →ₐ[k] R := A.val
   -- The irrelevant ideal of `A` and its extension to `R`.
   let RGplusA : Ideal A := (irrelevant 𝒜G).toIdeal
@@ -1095,9 +962,7 @@ theorem GIT_finiteType_invariants
       obtain ⟨c, hc⟩ := m
       have hcR : (c : R) ∈ 𝒜 i := h𝒜G i c hc
       change (((DirectSum.decompose 𝒜G (c : A)) 0 : A) : R) =
-        ((DirectSum.decompose 𝒜 (toR (⟨c, hc⟩ : ↥(𝒜G i)))) 0 : R)
-      have htoR_eq : toR (⟨c, hc⟩ : ↥(𝒜G i)) = (c : R) := rfl
-      rw [htoR_eq]
+        ((DirectSum.decompose 𝒜 (c : R)) 0 : R)
       by_cases hi : i = 0
       · subst hi
         rw [DirectSum.decompose_of_mem_same 𝒜G hc,
@@ -1116,10 +981,8 @@ theorem GIT_finiteType_invariants
     refine Ideal.map_le_iff_le_comap.mpr ?_
     intro a ha
     have h0A : ((DirectSum.decompose 𝒜G a) 0 : A) = 0 := by
-      have hmem : a ∈ HomogeneousIdeal.irrelevant 𝒜G := ha
-      have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜G) a).mp hmem
+      have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜G) a).mp ha
       simpa [GradedRing.proj_apply] using hp
-    change toR a ∈ (HomogeneousIdeal.irrelevant 𝒜).toIdeal
     change toR a ∈ HomogeneousIdeal.irrelevant 𝒜
     rw [HomogeneousIdeal.mem_irrelevant_iff]
     have hcompat := hdecomp0 a
@@ -1132,83 +995,36 @@ theorem GIT_finiteType_invariants
     · intro x hx
       have htoR_x : toR x ∈ (HomogeneousIdeal.irrelevant 𝒜).toIdeal := h_ext_le_irrR hx
       have h0R : ((DirectSum.decompose 𝒜 (toR x)) 0 : R) = 0 := by
-        have hmem : toR x ∈ HomogeneousIdeal.irrelevant 𝒜 := htoR_x
-        have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜) (toR x)).mp hmem
+        have hp := (HomogeneousIdeal.mem_irrelevant_iff (𝒜 := 𝒜) (toR x)).mp htoR_x
         simpa [GradedRing.proj_apply] using hp
       have hRA0 : (((DirectSum.decompose 𝒜G x) 0 : A) : R) = 0 := by
         rw [hdecomp0 x]; exact h0R
       have h0A : ((DirectSum.decompose 𝒜G x) 0 : A) = 0 := htoR_inj hRA0
-      change x ∈ (HomogeneousIdeal.irrelevant 𝒜G).toIdeal
       change x ∈ HomogeneousIdeal.irrelevant 𝒜G
       rw [HomogeneousIdeal.mem_irrelevant_iff]
       simpa [GradedRing.proj_apply] using h0A
   -- ── Lifts: each `x ∈ s` comes from some element of `RGplusA ⊆ A` ─────────
-  have lift_exists : ∀ x ∈ s, ∃ a : A, a ∈ RGplusA ∧ toR a = x := fun x hx => hs_sub x hx
-  choose liftFn hliftFn_mem hliftFn_eq using lift_exists
+  choose liftFn hliftFn_mem hliftFn_eq using hs_sub
   let lift : R → A := fun x => if hx : x ∈ s then liftFn x hx else 0
   have hlift : ∀ x ∈ s, toR (lift x) = x := fun x hx => by
     simp only [lift, dif_pos hx]; exact hliftFn_eq x hx
-  -- ── Reynolds linear map `ρ_lin : R →ₗ[k] A` from the `Rep`-projection ─-─
-  -- `π` lands in `σ.invariants`; via `hρ`, `σ.invariants = A.toSubmodule`, giving a
-  -- `k`-linear map into `A`. The required identities (`hρ_id`, `hρ_mul`, `hρ_gen`)
+  -- ── Reynolds linear map `ρ_lin : R →ₗ[k] A` from the multiplicative `Rep`-projection ─
+  -- `σ.invariants` and `A` share the same carrier `{r | ∀ g, g • r = r}`, so the Reynolds
+  -- projection `π'` co-restricts to a `k`-linear map into `A`. The required identities
   -- come from `IsProj` plus the `R^G`-multiplicativity bundled by Reynolds.
-  have ρ_lin_data :
-      ∃ ρ_lin : R →ₗ[k] A,
-        (∀ a : A, ρ_lin (toR a) = a) ∧
-        (∀ (a : A) (r : R), ρ_lin ((toR a) * r) = a * ρ_lin r) ∧
-        (∀ x ∈ s, ρ_lin x ∈ RGplusA) := by
-    -- Build `MulSemiringAction G R` from `ρ` + `hρ`, then invoke the multiplicativity
-    -- variant of Reynolds existence to get a Reynolds projection that is also
-    -- `R^G`-multiplicative.
-    letI : MulSemiringAction G R :=
-      { (inferInstance : DistribMulAction G R) with
-        smul_one := fun g => by
-          rw [show g • (1 : R) = ρ g 1 from (hρ_compat g 1).symm]; exact map_one (ρ g)
-        smul_mul := fun g a b => by
-          rw [show g • (a * b) = ρ g (a * b) from (hρ_compat g (a * b)).symm,
-              show g • a = ρ g a from (hρ_compat g a).symm,
-              show g • b = ρ g b from (hρ_compat g b).symm]
-          exact map_mul (ρ g) a b }
-    obtain ⟨π', hπ'_proj, hπ'_mul⟩
-      := exists_reynolds_mul_compat_of_locallyFinite (k := k) (G := G) hlr R hlf
-    -- `σ.invariants` and `A` have the same underlying set via `hρ`.
-    have h_inv_to_A : ∀ r : R,
-        r ∈ (Representation.ofDistribMulAction k G R).invariants → r ∈ A := by
-      intro r hr g
-      rw [hρ_compat]
-      exact ((Representation.ofDistribMulAction k G R).mem_invariants r).mp hr g
-    have h_A_to_inv : ∀ r : R,
-        r ∈ A → r ∈ (Representation.ofDistribMulAction k G R).invariants := by
-      intro r hr
-      rw [Representation.mem_invariants]
-      intro g
-      change g • r = r
-      rw [← hρ_compat]; exact hr g
-    have hπ'_to_A : ∀ r : R, π'.hom.hom r ∈ A.toSubmodule := fun r =>
-      h_inv_to_A _ (hπ'_proj.map_mem r)
-    let ρ_lin : R →ₗ[k] A :=
-      LinearMap.codRestrict A.toSubmodule π'.hom.hom hπ'_to_A
-    refine ⟨ρ_lin, ?_, ?_, ?_⟩
-    · -- ρ_lin (toR a) = a
-      intro a
-      apply Subtype.ext
-      change π'.hom.hom (a : R) = (a : R)
-      exact hπ'_proj.map_id (a : R) (h_A_to_inv (a : R) a.property)
-    · -- ρ_lin ((toR a) * r) = a * ρ_lin r
-      intro a r
-      apply Subtype.ext
-      change π'.hom.hom ((a : R) * r) = (a : R) * π'.hom.hom r
-      exact hπ'_mul (h_A_to_inv (a : R) a.property) r
-    · -- ρ_lin x ∈ RGplusA for x ∈ s
-      intro x hx
-      obtain ⟨a, ha_mem, ha_eq⟩ := hs_sub x hx
-      have h_eq : ρ_lin x = a := by
-        rw [show x = toR a from ha_eq.symm]
-        apply Subtype.ext
-        change π'.hom.hom (a : R) = (a : R)
-        exact hπ'_proj.map_id (a : R) (h_A_to_inv (a : R) a.property)
-      rw [h_eq]; exact ha_mem
-  obtain ⟨ρ_lin, hρ_id, hρ_mul, hρ_gen⟩ := ρ_lin_data
+  obtain ⟨π', hπ'_proj, hπ'_mul⟩
+    := exists_reynolds_mul_compat_of_locallyFinite (k := k) (G := G) hlr R hlf
+  have hA_inv : ∀ {a : A}, (a : R) ∈ (Representation.ofDistribMulAction k G R).invariants :=
+    fun {a} => (Representation.mem_invariants _ _).mpr a.property
+  have hπ'_to_A : ∀ r : R, π'.hom.hom r ∈ A.toSubmodule := fun r g =>
+    ((Representation.ofDistribMulAction k G R).mem_invariants _).mp (hπ'_proj.map_mem r) g
+  let ρ_lin : R →ₗ[k] A := LinearMap.codRestrict A.toSubmodule π'.hom.hom hπ'_to_A
+  have hρ_id : ∀ a : A, ρ_lin (toR a) = a := fun a =>
+    Subtype.ext (hπ'_proj.map_id (a : R) hA_inv)
+  have hρ_mul : ∀ (a : A) (r : R), ρ_lin ((toR a) * r) = a * ρ_lin r := fun a r =>
+    Subtype.ext (hπ'_mul hA_inv r)
+  have hρ_gen : ∀ x ∈ s, ρ_lin x ∈ RGplusA := fun x hx => by
+    rw [← hliftFn_eq x hx, hρ_id]; exact hliftFn_mem x hx
   -- ── Step 6 glue: `ReynoldsGITSpanProperty toR ρ_lin s` ───────────────────
   have hReynolds : ReynoldsGITSpanProperty toR ρ_lin s :=
     reynoldsGITSpanProperty_of_reynolds (k := k) A R toR ρ_lin s lift hlift hρ_id hρ_mul
