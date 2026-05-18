@@ -1,12 +1,8 @@
 /- definition of good quotient -/
 
+import Mathlib.CategoryTheory.Action.Basic
 import Mathlib.AlgebraicGeometry.Scheme
 import Mathlib.AlgebraicGeometry.Morphisms.Affine
-/- package for surjective morphisms -/
-import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
-import Mathlib.RepresentationTheory.Rep
-import Mathlib.Algebra.Group.Action.Defs
-import Mathlib.CategoryTheory.Action.Basic
 
 universe u
 
@@ -14,94 +10,68 @@ open AlgebraicGeometry CategoryTheory
 
 namespace GIT
 
-variable {k : Type u} [Field k]
 variable (G : Type u) [Group G]
-variable (X Y : Scheme.{u})
-variable [MulAction G X.carrier]
-variable (φ : X ⟶ Y)
 
-/-- Helper for condition (1) of the good-quotient definition.
+/-- **Helper predicate: local `Spec A → Spec A^G` structure.**
 
-A morphism `φ : X → Y` is `G`-invariant if it is constant on `G`-orbits,
-i.e. `φ (g • x) = φ x` for all `g : G` and `x : X`.
+For a morphism `π : X ⟶ Action.trivial G Y` in `Action Scheme G` and a per-open
+`G`-action `ρ` on the local sections of `X.V` over preimages `π⁻¹U`, this
+predicate asserts that for every affine open `U ⊆ Y`, the structure-sheaf
+pullback `π.hom.app U : Γ(U, 𝒪_Y) → Γ(π⁻¹U, 𝒪_X)` is injective and its image
+is exactly the `G`-invariant sections.
 
-This is factored out so that the proof that `φ` is `G`-invariant for a
-specific `φ` can be written outside the `IsGoodQuotient` structure. -/
-def IsGInvariant
-    {G : Type u} [Monoid G]
-    {X Y : Scheme.{u}}
-    (ρ : G → (X ⟶ X))
-    (φ : X ⟶ Y) : Prop :=
-  ∀ g : G, ρ g ≫ φ = φ
+This is the substantive content of "good quotient" beyond just being an affine
+`G`-invariant morphism — locally `π` looks like `Spec A → Spec A^G`.
 
-/-- Helper for condition (3) of the good-quotient definition.
-
-For every open affine `U ⊆ Y`, the pullback map
-`φ* : Γ(U, 𝒪_Y) → Γ(φ⁻¹(U), 𝒪_X)^G`
-induced by `φ` is an isomorphism onto the `G`-invariant sections.
-
-This is factored out so that the proof of property (3) for a specific `φ`
-can be written outside the `IsGoodQuotient` structure.
-(3) For every open affine `U ⊆ Y`, the pullback map
-    `φ* : Γ(U) → Γ(φ⁻¹(U))^G` is an isomorphism. -/
-def IsAffineSheafIso
-    {G : Type u} [Monoid G]
-    {X Y : Scheme.{u}}
-    (φ : X ⟶ Y)
-    (ρ : ∀ U : Y.Opens, MulAction G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)) : Prop :=
+The `G`-action `ρ` on local sections is taken as a hypothesis here; in a
+complete formalization it should be derived from `X.ρ` together with the
+`G`-invariance of `π⁻¹U` (which follows from the equivariance of `π`). -/
+def IsInvariantSections
+    {G : Type u} [Group G]
+    {X : Action Scheme.{u} G} {Y : Scheme.{u}}
+    (π : X ⟶ Action.trivial G Y)
+    (ρ : ∀ U : Y.Opens, MulAction G (X.V.presheaf.obj ⟨π.hom ⁻¹ᵁ U⟩)) : Prop :=
   ∀ (U : Y.Opens), IsAffineOpen U →
-    Function.Injective (φ.app U).hom ∧
-    Set.range (φ.app U).hom = MulAction.fixedPoints G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)
+    Function.Injective (π.hom.app U).hom ∧
+    Set.range (π.hom.app U).hom =
+      MulAction.fixedPoints G (X.V.presheaf.obj ⟨π.hom ⁻¹ᵁ U⟩)
 
-/-- Helper for conditions (4) and (5) of the good-quotient definition.
+/-- **Definition: Good Quotient (skeleton).**
 
-A subset `W ⊆ X` is (closed) `G`-invariant if it is closed under the
-`G`-action: `g • w ∈ W` for every `g : G` and `w ∈ W`.
+For a `G`-scheme `X : Action Scheme G`, a *good quotient* of `X` is the data of:
 
-This is factored out so that the hypotheses of properties (4) and (5)
-can be stated and discharged outside the `IsGoodQuotient` structure. -/
-def IsClosedGInvariant {G : Type u} [Monoid G] {X : Scheme.{u}}
-    (ρ : G → (X ⟶ X)) (W : Set X.carrier) : Prop :=
-  ∀ (g : G), (ρ g).base ⁻¹' W ⊇ W
+* a scheme `Y`,
+* a morphism `π : X ⟶ Action.trivial G Y` in `Action Scheme G` (since `Y`
+  carries the trivial `G`-action, the morphism's equivariance condition
+  `X.ρ g ≫ π.hom = π.hom ≫ (trivial G Y).ρ g` simplifies to
+  `X.ρ g ≫ π.hom = π.hom`, i.e. `π` is automatically `G`-invariant),
+* a per-open `G`-action `ρ` on local sections of `X.V` over preimages `π⁻¹U`,
 
+satisfying:
 
-/-- **Definition: Good Quotient.**
+1. **`isAffine`** — `π` is an affine morphism;
+2. **`invariantSections`** — locally `π` looks like `Spec A → Spec A^G`;
+   see `IsInvariantSections`.
 
-For the action of an affine algebraic group `G` on a variety `X`, a morphism
-`φ : X → Y` is a *good quotient* if:
-
-1. `φ` is affine and `G`-invariant;            [DONE]
-2. `φ` is surjective;                          [DONE]
-3. for every open affine `U ⊆ Y`, the pullback `φ* : Γ(U) → Γ(φ⁻¹(U))^G`
-   is an isomorphism;                          [DONE]
-4. the image of any closed `G`-invariant subset of `X` is closed in `Y`;
-                                               [DONE]
-5. disjoint closed `G`-invariant subsets of `X` have disjoint images in `Y`.
-                                               [DONE]
--/
-structure IsGoodQuotient
-    (k : Type u) [Field k]
-    (G : Type u) [Group G]
-    (X Y : Scheme.{u})
-    (ρ_sch : G → (X ⟶ X))
-    (φ : X ⟶ Y)
-    (ρ : ∀ U : Y.Opens, MulAction G (X.presheaf.obj ⟨φ ⁻¹ᵁ U⟩)) : Prop where
-  /-- (1a) `φ` is an affine morphism. -/
-  isAffine : AlgebraicGeometry.IsAffineHom φ
-  /-- (1b) `φ` is `G`-invariant. -/
-  isGInvariant : IsGInvariant ρ_sch φ
-  /-- (2) `φ` is surjective. -/
-  surjective : Function.Surjective φ.base
-  /-- (3) For every open affine `U ⊆ Y`, the pullback map
-      `φ* : Γ(U) → Γ(φ⁻¹(U))^G` is an isomorphism. -/
-  pullback_iso : IsAffineSheafIso φ ρ
-  /-- (4) The image of any closed `G`-invariant subset is closed. -/
-  closed_image : ∀ (W : Set X.carrier),
-    IsClosed W → IsClosedGInvariant ρ_sch W → IsClosed (φ.base '' W)
-  /-- (5) Disjoint closed `G`-invariant subsets have disjoint images. -/
-  separates_disjoint : ∀ (W₁ W₂ : Set X.carrier),
-    IsClosed W₁ → IsClosedGInvariant ρ_sch W₁ →
-    IsClosed W₂ → IsClosedGInvariant ρ_sch W₂ →
-    Disjoint W₁ W₂ → Disjoint (φ.base '' W₁) (φ.base '' W₂)
+The classical full definition adds three further conditions — surjectivity,
+closed-image of `G`-invariant closed subsets, and separation of disjoint
+closed `G`-invariant subsets — which can be added as additional fields when
+needed. -/
+structure GoodQuotient (X : Action Scheme.{u} G) where
+  /-- The underlying quotient scheme. -/
+  Y : Scheme.{u}
+  /-- The quotient morphism, as a morphism in `Action Scheme G` to the
+  trivially-acted-on `Y`. The category structure encodes `G`-equivariance,
+  which (given the trivial action on `Y`) is `G`-invariance of the underlying
+  scheme map. -/
+  π : X ⟶ Action.trivial G Y
+  /-- Per-open `G`-action on local sections. Should be derivable from `X.ρ`
+  plus the `G`-invariance of `π⁻¹U`; taken as a hypothesis here. -/
+  ρ : ∀ U : Y.Opens, MulAction G (X.V.presheaf.obj ⟨π.hom ⁻¹ᵁ U⟩)
+  /-- `π` is an affine morphism (G-invariance comes for free from the category). -/
+  affine : IsAffineHom π.hom
+  /-- Locally, `π` looks like `Spec A → Spec A^G`: for every affine open
+  `U ⊆ Y`, the pullback `π* : Γ(U, 𝒪_Y) → Γ(π⁻¹U, 𝒪_X)^G` is an isomorphism. -/
+  invariantSections : IsInvariantSections π ρ
 
 end GIT
