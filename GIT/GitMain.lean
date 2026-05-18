@@ -12,7 +12,7 @@ open scoped BigOperators
 
 universe u v w uR
 
-section GradedCheck_S1
+section InheritedGrading
 
 -- Basic objects
 
@@ -258,9 +258,9 @@ theorem fixedSubalgebra_decomposes
           rw [hy_decomp]
       _ = (x : R) := DirectSum.Decomposition.left_inv (ℳ := 𝒜) (x : R)
 
-end GradedCheck_S1
+end InheritedGrading
 
-section IrrelevantIdeal_FiniteType_S2
+section GradedAlgebraFiniteType
 
 /-
 If `R₊` is finitely generated as an ideal, then `R` is finitely generated as an algebra over the
@@ -447,9 +447,63 @@ end
 
 end GIT
 
-end IrrelevantIdeal_FiniteType_S2
+/-- If `toR : A →ₐ[k] R` is grading-preserving (sends `𝒜G d` into `𝒜 d`),
+then taking the degree-`0` component commutes with `toR`. -/
+lemma AlgHom.map_decompose_zero
+    {k : Type u} [Field k]
+    {A : Type*} [CommRing A] [Algebra k A]
+    {R : Type*} [CommRing R] [Algebra k R]
+    (toR : A →ₐ[k] R)
+    (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
+    (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
+    (htoR : ∀ (d : ℕ) (a : A), a ∈ 𝒜G d → toR a ∈ 𝒜 d) (a : A) :
+    toR ((DirectSum.decompose 𝒜G a) 0 : A) =
+      ((DirectSum.decompose 𝒜 (toR a)) 0 : R) := by
+  refine DirectSum.Decomposition.inductionOn (ℳ := 𝒜G)
+    (motive := fun a => toR ((DirectSum.decompose 𝒜G a) 0 : A) =
+      ((DirectSum.decompose 𝒜 (toR a)) 0 : R)) (by simp) ?_ ?_ a
+  · rintro i ⟨c, hc⟩
+    change toR ((DirectSum.decompose 𝒜G (c : A)) 0 : A) =
+        ((DirectSum.decompose 𝒜 (toR (c : A))) 0 : R)
+    by_cases hi : i = 0
+    · subst hi
+      rw [DirectSum.decompose_of_mem_same 𝒜G hc,
+          DirectSum.decompose_of_mem_same 𝒜 (htoR 0 c hc)]
+    · rw [DirectSum.decompose_of_mem_ne 𝒜G hc hi,
+          DirectSum.decompose_of_mem_ne 𝒜 (htoR i c hc) hi]
+      simp
+  · intro x y hx hy
+    simp only [DirectSum.decompose_add, DirectSum.add_apply, AddMemClass.coe_add,
+      map_add, hx, hy]
 
-section RGplus_finitely_generated_S3
+section FixedSubalgebraFiniteType
+
+variable (k : Type u) [Field k]
+variable (R : Type*) [CommRing R] [Algebra k R]
+variable (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
+
+variable (A : Type*) [CommRing A] [Algebra k A]
+variable (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
+
+open Algebra HomogeneousIdeal
+
+/-- **Step 7.** The fixed subalgebra `A = R^G` is finitely generated as a `k`-algebra,
+provided its degree-`0` piece is finitely generated over `k` and its irrelevant ideal
+is finitely generated as an ideal of `A`. -/
+theorem fixedSubalgebra_finiteType
+    [FiniteType k (𝒜G 0)]
+    (hfg : (irrelevant 𝒜G).toIdeal.FG) :
+    FiniteType k A :=
+  GIT.finiteType_k_of_finitely_generated_irrelevant_ideal
+    (k := k) (R := A) (𝒜 := 𝒜G) hfg
+
+end FixedSubalgebraFiniteType
+
+end GradedAlgebraFiniteType
+
+section ReynoldsIdealMachinery
+
+section ExtendedIdealNoether
 
 variable (R : Type*) [CommRing R]
 variable [IsNoetherianRing R]
@@ -459,9 +513,9 @@ variable (extendedRGplus : Ideal R)
 /-- Since `R` is Noetherian, the ideal `R₊^G R` is finitely generated. -/
 theorem extendedRGplus_fg : extendedRGplus.FG := IsNoetherian.noetherian extendedRGplus
 
-end RGplus_finitely_generated_S3
+end ExtendedIdealNoether
 
-section RGplus_generators_S4
+section ChooseFiniteGenerators
 
 variable (R : Type*) [CommRing R]
 
@@ -494,47 +548,9 @@ theorem exists_generators_extendedRGplus_from_RGplus
       Ideal.span (↑s : Set R) = Ideal.span RGplusSet := hs_span.symm
       _ = extendedRGplus := hspan
 
-end RGplus_generators_S4
+end ChooseFiniteGenerators
 
-/-!
-## Step 5.5 — Existence of a Reynolds operator on `R`
-
-We have a linearly reductive group `G` acting on `R` by algebra automorphisms.
-If this action is locally finite (which holds, for example, when `G` is a
-linearly reductive group acting on a finitely generated `k`-algebra), then
-`exists_reynolds_of_locallyFinite` from `GIT.ReynoldsOperator` gives us a
-`k`-linear Reynolds projector `π : R →ₗ[k] R` onto the `G`-invariants `R^G`.
-
-The theorem below packages this in the form needed for the subsequent steps:
-it produces the projector and records the two key properties —
-(i)  `π r ∈ R^G` for every `r : R`, and
-(ii) `π r = r` whenever `r ∈ R^G`.
--/
-section ReynoldsExists_S5_5
-
--- All three must be in the same universe u to match exists_reynolds_of_locallyFinite
-variable (k : Type u) [Field k]
-variable (G : Type u) [Group G]  -- was: Type v
-variable (R : Type u) [AddCommGroup R] [Module k R]
-  [DistribMulAction G R] [SMulCommClass G k R]
-
-/-- Given a linearly reductive group `G` and a locally finite `k`-linear `G`-module `R`,
-there is a Reynolds projector onto the `G`-invariants.
-
-This is a direct application of `exists_reynolds_of_locallyFinite`. -/
-theorem reynolds_operator_exists
-    (hlr : IsLinearlyReductive k G)
-    (hlf : Representation.IsLocallyFinite k G R) :
-    ∃ π : Rep.of (Representation.ofDistribMulAction k G R) ⟶
-          Rep.of (Representation.ofDistribMulAction k G R),
-      LinearMap.IsProj
-        (Representation.ofDistribMulAction k G R).invariants
-        π.hom.hom :=
-  exists_reynolds_of_locallyFinite (k := k) (G := G) hlr R hlf
-
-end ReynoldsExists_S5_5
-
-section RGplus_generators_S5
+section RGplusA_FiniteGeneration
 
 variable {k : Type u} [Field k]
 
@@ -603,9 +619,9 @@ theorem RGplusA_fg_of_reynolds
   · intro f hf
     exact mem_span_of_reynolds_generators hs_span hcomap hReynolds f hf
 
-end RGplus_generators_S5
+end RGplusA_FiniteGeneration
 
-section ReynoldsRewrite_S6
+section ReynoldsRewriting
 
 set_option linter.unusedSectionVars false
 
@@ -738,78 +754,9 @@ theorem reynoldsGITSpanProperty_of_reynolds
   rw [hsets] at hf_lift
   exact hf_lift
 
-end ReynoldsRewrite_S6
+end ReynoldsRewriting
 
-/-
-Step 7: Finite generation of `A = R^G` as a `k`-algebra.
-
-This is the conclusion of the Hilbert finiteness argument. The previous steps
-provide:
-
-* (Step 5) The irrelevant ideal `R₊^G` of `A` is finitely generated as an ideal
-  of `A` — `RGplusA_fg_of_reynolds`.
-* (Step 1) `A` decomposes as `⨁ d, (𝒜 d ∩ A)`, i.e. `A` carries an `ℕ`-grading
-  `𝒜G` inherited from `R` — `fixedSubalgebra_decomposes`.
-* (Step 2) For any positively graded `k`-algebra whose irrelevant ideal is
-  finitely generated and whose degree-`0` piece is finitely generated as a
-  `k`-algebra, the whole algebra is finitely generated as a `k`-algebra —
-  `finiteType_of_finitely_generated_irrelevant_ideal`.
-
-Combining these gives `FiniteType k A`. In the GIT setting one typically has
-`(𝒜G) 0 = k`, so the `FiniteType k ((𝒜G) 0)` hypothesis is automatic.
--/
-
-section FixedSubalgebra_FiniteType_S7
-
-variable (k : Type u) [Field k]
-variable (R : Type*) [CommRing R] [Algebra k R]
-variable (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
-
-variable (A : Type*) [CommRing A] [Algebra k A]
-variable (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
-
-open Algebra HomogeneousIdeal
-
-/-- **Step 7.** The fixed subalgebra `A = R^G` is finitely generated as a `k`-algebra,
-provided its degree-`0` piece is finitely generated over `k` and its irrelevant ideal
-is finitely generated as an ideal of `A`. -/
-theorem fixedSubalgebra_finiteType
-    [FiniteType k (𝒜G 0)]
-    (hfg : (irrelevant 𝒜G).toIdeal.FG) :
-    FiniteType k A :=
-  GIT.finiteType_k_of_finitely_generated_irrelevant_ideal
-    (k := k) (R := A) (𝒜 := 𝒜G) hfg
-
-end FixedSubalgebra_FiniteType_S7
-
-/-- If `toR : A →ₐ[k] R` is grading-preserving (sends `𝒜G d` into `𝒜 d`),
-then taking the degree-`0` component commutes with `toR`. -/
-lemma AlgHom.map_decompose_zero
-    {k : Type u} [Field k]
-    {A : Type*} [CommRing A] [Algebra k A]
-    {R : Type*} [CommRing R] [Algebra k R]
-    (toR : A →ₐ[k] R)
-    (𝒜G : ℕ → Submodule k A) [GradedAlgebra 𝒜G]
-    (𝒜 : ℕ → Submodule k R) [GradedAlgebra 𝒜]
-    (htoR : ∀ (d : ℕ) (a : A), a ∈ 𝒜G d → toR a ∈ 𝒜 d) (a : A) :
-    toR ((DirectSum.decompose 𝒜G a) 0 : A) =
-      ((DirectSum.decompose 𝒜 (toR a)) 0 : R) := by
-  refine DirectSum.Decomposition.inductionOn (ℳ := 𝒜G)
-    (motive := fun a => toR ((DirectSum.decompose 𝒜G a) 0 : A) =
-      ((DirectSum.decompose 𝒜 (toR a)) 0 : R)) (by simp) ?_ ?_ a
-  · rintro i ⟨c, hc⟩
-    change toR ((DirectSum.decompose 𝒜G (c : A)) 0 : A) =
-        ((DirectSum.decompose 𝒜 (toR (c : A))) 0 : R)
-    by_cases hi : i = 0
-    · subst hi
-      rw [DirectSum.decompose_of_mem_same 𝒜G hc,
-          DirectSum.decompose_of_mem_same 𝒜 (htoR 0 c hc)]
-    · rw [DirectSum.decompose_of_mem_ne 𝒜G hc hi,
-          DirectSum.decompose_of_mem_ne 𝒜 (htoR i c hc) hi]
-      simp
-  · intro x y hx hy
-    simp only [DirectSum.decompose_add, DirectSum.add_apply, AddMemClass.coe_add,
-      map_add, hx, hy]
+end ReynoldsIdealMachinery
 
 /-!
 ## Main GIT theorem (Hilbert finiteness)
@@ -817,17 +764,23 @@ lemma AlgHom.map_decompose_zero
 For a linearly reductive group `G` acting on a finitely generated `k`-algebra `R`,
 the invariant subring `R^G` is finitely generated as a `k`-algebra.
 
-The proof chains Steps 1–7:
-* **Step 1** (`fixedSubalgebra_decomposes`): `R^G` inherits an `ℕ`-grading from `R`.
-* **Step 5.5** (`reynolds_operator_exists`): from `IsLinearlyReductive` + `IsLocallyFinite`,
-  obtain a Reynolds projection `R ↠ R^G`.
-* **Steps 3–4** (`extendedRGplus_fg`, `exists_generators_extendedRGplus_from_RGplus`):
-  the extended ideal `R₊^G · R` is f.g. (Noether) and admits generators chosen from `R₊^G`.
-* **Step 5** (`RGplusA_fg_of_reynolds`): pushing generators back via Reynolds shows
-  the irrelevant ideal of `R^G` is f.g.
-* **Steps 2 & 7** (`finiteType_k_of_finitely_generated_irrelevant_ideal`,
-  `fixedSubalgebra_finiteType`): a positively-graded `k`-algebra with f.g. irrelevant
-  ideal and f.g. degree-0 piece is itself f.g. as a `k`-algebra.
+The proof assembles the pieces from the preceding sections:
+* **Reynolds projection**: from `IsLinearlyReductive` + `IsLocallyFinite`, the upstream
+  `exists_reynolds_mul_compat_of_locallyFinite` (in `GIT.ReynoldsOperator`) gives a
+  multiplicative Reynolds projection `R ↠ R^G`.
+* **Extended ideal generators** (`ReynoldsIdealMachinery`):
+  `extendedRGplus_fg` (Noether) + `exists_generators_extendedRGplus_from_RGplus` pick
+  finitely many generators inside `R₊^G`.
+* **Pushing back via Reynolds** (`RGplusA_fg_of_reynolds`,
+  `reynoldsGITSpanProperty_of_reynolds`): the irrelevant ideal of `R^G` is f.g. as
+  an ideal of `R^G`.
+* **Finite generation from f.g. irrelevant ideal** (`GradedAlgebraFiniteType`):
+  `fixedSubalgebra_finiteType` (specializing `finiteType_k_of_finitely_generated_irrelevant_ideal`)
+  concludes `FiniteType k (R^G)`.
+
+The inherited grading `R^G = ⨁ d, (𝒜 d ∩ R^G)` itself is the standalone result
+`fixedSubalgebra_decomposes` in `InheritedGrading`; the main theorem takes
+`[GradedAlgebra 𝒜G]` as a hypothesis rather than constructing it here.
 -/
 
 section GIT_MainTheorem
