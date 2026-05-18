@@ -47,11 +47,6 @@ def FixedSubalgebra : Subalgebra k R where
   mul_mem' hx hy g := by simp [smul_mul', hx g, hy g]
   algebraMap_mem' a g := smul_algebraMap g a
 
--- Degree-d piece in ambient R
-
-def FixedPiece (d : ι) : Submodule k R :=
-  𝒜 d ⊓ (FixedSubalgebra k G R).toSubmodule
-
 -- Degree-d piece in R^G
 
 def FixedPieceInFixedSubalgebra (d : ι) :
@@ -110,20 +105,6 @@ lemma fixed_component_is_fixed
     simpa using x.property g
   rw [hxfix] at hcomm
   simpa [GradedAlgebra.proj_apply] using hcomm.symm
-
-lemma fixed_component_mem_fixedPiece
-    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜))
-    (x : FixedSubalgebra k G R) (d : ι) :
-    (⟨((DirectSum.decompose 𝒜 (x : R)) d : R),
-      fixed_component_is_fixed
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
-        hpres x d⟩ :
-      FixedSubalgebra k G R) ∈
-      FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d :=
-  fixed_component_mem_degree
-    (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)
-    x d
 
 -- Forget map
 def fixedPieceForget (d : ι) :
@@ -276,43 +257,6 @@ theorem fixedSubalgebra_decomposes
         (DirectSum.coeAddMonoidHom 𝒜) (DirectSum.decompose 𝒜 (x : R)) := by
           rw [hy_decomp]
       _ = (x : R) := DirectSum.Decomposition.left_inv (ℳ := 𝒜) (x : R)
-
-/-! ### Glue: turn `IsInternal` (Step 1) into a `GradedAlgebra` instance on `R^G`. -/
-
-/-- The unit of `R^G` lies in the degree-`0` fixed piece. -/
-instance fixedPieceInFixedSubalgebra_gradedOne :
-    SetLike.GradedOne
-      (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
-  one_mem := show (1 : R) ∈ 𝒜 0 from SetLike.GradedOne.one_mem
-
-/-- Multiplication in `R^G` respects the inherited grading. -/
-instance fixedPieceInFixedSubalgebra_gradedMul :
-    SetLike.GradedMul
-      (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
-  mul_mem := fun {i j a b} ha hb =>
-    show ((a : R) * (b : R)) ∈ 𝒜 (i + j) from
-      SetLike.GradedMul.mul_mem ha hb
-
-/-- The fixed-piece family on `R^G` forms a graded monoid. -/
-instance fixedPieceInFixedSubalgebra_gradedMonoid :
-    SetLike.GradedMonoid
-      (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) where
-
-/-- **Glue lemma (1): `R^G` carries an inherited graded-algebra structure.**
-
-Combining Step 1 (`fixedSubalgebra_decomposes`) with the `SetLike.GradedMonoid` instances
-above, the family `FixedPieceInFixedSubalgebra` makes `R^G` a graded `k`-algebra. -/
-noncomputable def fixedSubalgebra_gradedAlgebra
-    (hpres : PreservesGrading (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜)) :
-    GradedAlgebra
-      (fun d : ι => FixedPieceInFixedSubalgebra
-        (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) d) :=
-  DirectSum.IsInternal.gradedAlgebra
-    (fixedSubalgebra_decomposes
-      (k := k) (G := G) (ι := ι) (R := R) (𝒜 := 𝒜) hpres)
 
 end GradedCheck_S1
 
@@ -515,11 +459,6 @@ variable (extendedRGplus : Ideal R)
 /-- Since `R` is Noetherian, the ideal `R₊^G R` is finitely generated. -/
 theorem extendedRGplus_fg : extendedRGplus.FG := IsNoetherian.noetherian extendedRGplus
 
-/-- Choose a finite generating set for `R₊^G R`. -/
-theorem exists_generators_extendedRGplus :
-    ∃ s : Finset R, Ideal.span (↑s : Set R) = extendedRGplus := by
-  simpa [Ideal.FG] using extendedRGplus_fg (R := R) (extendedRGplus := extendedRGplus)
-
 end RGplus_finitely_generated_S3
 
 section RGplus_generators_S4
@@ -716,20 +655,6 @@ theorem mem_ideal_span_lift_of_reynolds
   refine Ideal.mul_mem_right _ _ ?_
   refine Ideal.subset_span ?_
   exact Set.mem_image_of_mem lift x.property
-
-/-- **Step 6 (ideal-generation corollary).** -/
-theorem RGplusA_le_span_lift_of_reynolds
-    (RGplusA : Ideal A)
-    (present : ∀ f ∈ RGplusA, ∃ coeff : s → R,
-      toR f = ∑ x ∈ s.attach, x.val * coeff x)
-    (hlift : ∀ x ∈ s, toR (lift x) = x)
-    (hρ_id : ∀ a : A, ρ (toR a) = a)
-    (hρ_mul : ∀ (a : A) (r : R), ρ ((toR a) * r) = a * ρ r) :
-    RGplusA ≤ Ideal.span ((lift '' (s : Set R)) : Set A) := by
-  intro f hf
-  obtain ⟨coeff, hcoeff⟩ := present f hf
-  exact mem_ideal_span_lift_of_reynolds k A R toR ρ s lift
-    f coeff hcoeff hlift hρ_id hρ_mul
 
 /-- Auxiliary: from membership in `Ideal.span (s : Set R)` extract a presentation
 `x = ∑ t ∈ s.attach, t.val * coeff t` for some `coeff : s → R`. -/
