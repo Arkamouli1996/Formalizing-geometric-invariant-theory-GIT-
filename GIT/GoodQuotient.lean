@@ -57,7 +57,7 @@ The classical full definition adds three further conditions — surjectivity,
 closed-image of `G`-invariant closed subsets, and separation of disjoint
 closed `G`-invariant subsets — which can be added as additional fields when
 needed. -/
-structure GoodQuotient (X : Action Scheme.{u} G) where
+structure isGoodQuotient (X : Action Scheme.{u} G) where
   /-- The underlying quotient scheme. -/
   Y : Scheme.{u}
   /-- The quotient morphism, as a morphism in `Action Scheme G` to the
