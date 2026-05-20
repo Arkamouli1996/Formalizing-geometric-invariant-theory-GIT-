@@ -8,7 +8,7 @@ universe u
 
 open AlgebraicGeometry CategoryTheory
 
-namespace GIT
+namespace GoodQuotient_Definition
 
 variable (G : Type u) [Group G]
 
@@ -75,4 +75,4 @@ structure isGoodQuotient (X : Action Scheme.{u} G) where
   `U ⊆ Y`, the pullback `φ* : Γ(U, 𝒪_Y) → Γ(φ⁻¹U, 𝒪_X)^G` is an isomorphism. -/
   invariantSections : IsInvariantSections φ ρ
 
-end GIT
+end GoodQuotient_Definition
