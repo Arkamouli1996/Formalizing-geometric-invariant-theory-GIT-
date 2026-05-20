@@ -76,7 +76,7 @@ structure GoodQuotient (X : Action Scheme.{u} G) where
 /-Helper method: -/
 /-- A subset `W ⊆ X` is G-invariant if it is stable under every `g : G`. -/
 def IsGInvariantSubset {X : Action Scheme G} (W : Set X.V) : Prop :=
-  ∀ (g : G), (X.ρ g).val.base '' W ⊆ W
+  ∀ (g : G), (X.ρ g).base '' W ⊆ W
 
 variable {G} {X : Action Scheme G} (q : GoodQuotient G X)
 
