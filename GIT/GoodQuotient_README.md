@@ -31,7 +31,9 @@ Let $G$ be a linearly reductive group acting on a scheme $U$, and let $\pi : U \
 
 **Proof.**
 
-Since $\pi$ is affine, closedness may be checked locally on $X$. Let $V = \text{Spec}(A) \subseteq X$ be an affine open subset and write $\pi^{-1}(V) = \text{Spec}(B)$ with $A \cong B^G$.
+Since $\pi$ is affine, closedness may be checked locally on $X$. 
+
+Let $V = \text{Spec}(A) \subseteq X$ be an affine open subset and write $\pi^{-1}(V) = \text{Spec}(B)$ with $A \cong B^G$.
 
 Since $W$ is closed and $G$-invariant, the intersection $W \cap \text{Spec}(B)$ corresponds to a $G$-invariant ideal $I \subseteq B$. 
 
