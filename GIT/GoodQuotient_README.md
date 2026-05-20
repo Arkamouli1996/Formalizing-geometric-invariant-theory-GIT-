@@ -23,7 +23,7 @@ Hence $R(\mathfrak{p} \cdot B) \subseteq \mathfrak{p} \subsetneq B^G$, which sho
 
 Therefore $\mathfrak{p} \cdot B$ is a proper ideal of $B$, and by Zorn's lemma it is contained in some prime ideal $\mathfrak{q} \subset B$. 
 
-This prime satisfies $\mathfrak{q} \cap B^G = \mathfrak{p}$, so $\mathfrak{p}$ is in the image of $\text{Spec}(B) \to \text{Spec}(B^G)$. $\blacksquare$
+This prime satisfies $\mathfrak{q} \cap B^G = \mathfrak{p}$ [**This needs to be checked, i think not every prime will work, but maybe the minimal prime??**], so $\mathfrak{p}$ is in the image of $\text{Spec}(B) \to \text{Spec}(B^G)$. $\blacksquare$
 
 ## goodQuotient_closed_image — Proposition 8.1.3 (1b)
 
